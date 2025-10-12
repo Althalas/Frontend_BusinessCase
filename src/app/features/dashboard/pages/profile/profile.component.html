@@ -1,0 +1,145 @@
+<div class="dashboard-container">
+  <!-- BANNER WITH PROFILE INFO -->
+  <div class="dashboard-header-banner profile-banner">
+    <div class="banner-content profile-content">
+      <div class="avatar-wrapper">
+        <img [src]="getAvatarUrl()" alt="Profile Avatar" class="profile-avatar" />
+        <button class="edit-avatar-btn" (click)="fileInput.click()" mat-icon-button>
+          <mat-icon>edit</mat-icon>
+        </button>
+        <input #fileInput type="file" hidden (change)="onFileSelected($event)" accept="image/*" />
+      </div>
+      <div class="profile-text">
+        <h1>{{ profileForm.get("firstName")?.value }} {{ profileForm.get("lastName")?.value }}</h1>
+        <p class="role-pill">
+          @if (currentUser()?.roles?.includes('admin')) {
+          Administrateur
+          } @else if (currentUser()?.roles?.includes('owner')) {
+          Propriétaire & Conducteur
+          } @else {
+          Conducteur
+          }
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-grid">
+    <!-- PERSONAL INFO -->
+    <mat-card class="settings-card">
+      <mat-card-header>
+        <mat-card-title>
+          <div class="icon-box"><mat-icon>person</mat-icon></div>
+          <span>Informations Personnelles</span>
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="profileForm" (ngSubmit)="onSubmitProfile()">
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Prénom</mat-label>
+              <input matInput formControlName="firstName" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Nom</mat-label>
+              <input matInput formControlName="lastName" />
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" />
+            <mat-icon matSuffix>lock</mat-icon>
+            <mat-hint>L'email ne peut pas être modifié</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Téléphone</mat-label>
+            <input matInput type="tel" formControlName="phone" />
+            <mat-icon matSuffix>phone</mat-icon>
+          </mat-form-field>
+
+          <div class="actions">
+            <button mat-raised-button color="primary" type="submit" [disabled]="profileForm.invalid || isUpdating()">
+              @if (isUpdating()) {
+              <mat-spinner diameter="20"></mat-spinner>
+              } @else { Mettre à jour }
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- SECURITY & DATA -->
+    <div class="security-column">
+      <mat-card class="settings-card">
+        <mat-card-header>
+          <mat-card-title>
+            <div class="icon-box"><mat-icon>security</mat-icon></div>
+            <span>Sécurité</span>
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <form [formGroup]="passwordForm" (ngSubmit)="onSubmitPassword()">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Mot de passe actuel</mat-label>
+              <input matInput [type]="hideCurrentPassword ? 'password' : 'text'" formControlName="currentPassword" />
+              <button mat-icon-button matSuffix type="button" (click)="hideCurrentPassword = !hideCurrentPassword">
+                <mat-icon>{{ hideCurrentPassword ? "visibility_off" : "visibility" }}</mat-icon>
+              </button>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Nouveau mot de passe</mat-label>
+              <input matInput [type]="hideNewPassword ? 'password' : 'text'" formControlName="newPassword" />
+              <button mat-icon-button matSuffix type="button" (click)="hideNewPassword = !hideNewPassword">
+                <mat-icon>{{ hideNewPassword ? "visibility_off" : "visibility" }}</mat-icon>
+              </button>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Confirmer</mat-label>
+              <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" formControlName="confirmPassword" />
+            </mat-form-field>
+
+            <div class="actions">
+              <button mat-flat-button color="accent" type="submit"
+                [disabled]="passwordForm.invalid || isChangingPassword()">
+                Changer le mot de passe
+              </button>
+            </div>
+          </form>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="settings-card gdpr-card">
+        <mat-card-header>
+          <mat-card-title>
+            <div class="icon-box"><mat-icon>folder_shared</mat-icon></div>
+            <span>Mes Données</span>
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p>Vous pouvez télécharger une copie de vos données personnelles.</p>
+          <button mat-stroked-button color="primary" (click)="downloadData()">
+            <mat-icon>download</mat-icon> Exporter en JSON
+          </button>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="settings-card danger-card">
+        <mat-card-header>
+          <mat-card-title class="text-danger">
+            <div class="icon-box"><mat-icon>warning</mat-icon></div>
+            <span>Zone de Danger</span>
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p>La suppression du compte est définitive.</p>
+          <button mat-button color="warn">Supprimer mon compte</button>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

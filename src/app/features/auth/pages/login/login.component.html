@@ -1,0 +1,91 @@
+<div class="login-container">
+  <mat-card class="login-card">
+    <mat-card-header>
+      <mat-card-title>Connexion</mat-card-title>
+      <mat-card-subtitle
+        >Accédez à votre compte Electricity Business</mat-card-subtitle
+      >
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input
+            matInput
+            type="email"
+            formControlName="email"
+            placeholder="votre@email.com"
+            autocomplete="email"
+            data-cy="auth-email-input"
+          />
+          <mat-icon matSuffix>email</mat-icon>
+          @if (loginForm.get('email')?.hasError('required') &&
+          loginForm.get('email')?.touched) {
+          <mat-error>L'email est requis</mat-error>
+          } @if (loginForm.get('email')?.hasError('email')) {
+          <mat-error>Email invalide</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Mot de passe</mat-label>
+          <input
+            matInput
+            [type]="hidePassword ? 'password' : 'text'"
+            formControlName="password"
+            autocomplete="current-password"
+            data-cy="auth-password-input"
+          />
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="hidePassword = !hidePassword"
+            [attr.aria-label]="
+              hidePassword
+                ? 'Afficher le mot de passe'
+                : 'Masquer le mot de passe'
+            "
+            data-cy="auth-password-toggle"
+          >
+            <mat-icon>{{
+              hidePassword ? "visibility_off" : "visibility"
+            }}</mat-icon>
+          </button>
+          @if (loginForm.get('password')?.hasError('required') &&
+          loginForm.get('password')?.touched) {
+          <mat-error>Le mot de passe est requis</mat-error>
+          }
+        </mat-form-field>
+
+        <button
+          mat-raised-button
+          color="primary"
+          type="submit"
+          class="full-width submit-btn"
+          [disabled]="loginForm.invalid || isLoading()"
+          data-cy="auth-submit-btn"
+        >
+          @if (isLoading()) {
+          <mat-spinner diameter="20"></mat-spinner>
+          } @else { Se connecter }
+        </button>
+      </form>
+    </mat-card-content>
+
+    <mat-card-actions align="end">
+      <a mat-button routerLink="/auth/register" color="accent" data-cy="auth-register-link">
+        Pas encore de compte ? S'inscrire
+      </a>
+    </mat-card-actions>
+  </mat-card>
+
+  <div class="public-links">
+    <a routerLink="/about">À propos</a>
+    <span class="divider">•</span>
+    <a routerLink="/contact">Contact</a>
+    <span class="divider">•</span>
+    <a routerLink="/terms">CGU / Mentions légales</a>
+  </div>
+</div>

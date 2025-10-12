@@ -1,0 +1,209 @@
+.station-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--bg-card);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+.station-image-placeholder {
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Green gradient matching StationDetail */
+  background: linear-gradient(135deg, var(--color-brand-light) 0%, var(--color-brand-dark) 100%);
+  position: relative;
+  overflow: hidden;
+
+  /* When photo exists, remove green background */
+  &.has-photo {
+    background: transparent;
+
+    &::before {
+      display: none;
+    }
+  }
+}
+
+/* Increase specificity to override Material styles cleanly */
+.station-image-placeholder .favorite-btn.mat-mdc-icon-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  line-height: 36px;
+  padding: 0;
+  background: var(--glass-bg);
+  border-radius: 50%;
+  z-index: 10;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  // Ensure icon color is visible against glass bg
+  color: var(--color-brand-dark);
+
+  &.is-favorite {
+    background: var(--bg-card);
+
+    mat-icon {
+      /* Explicitly color the icon red (Material Warn/Error Red) */
+      color: var(--color-error);
+    }
+  }
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+  }
+
+  &:hover {
+    background: var(--bg-card);
+    transform: scale(1.1);
+  }
+}
+
+.station-card:hover .favorite-btn {
+  opacity: 1;
+}
+
+.station-image-placeholder::before {
+  content: "";
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 70%);
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.station-image-placeholder mat-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: var(--text-inverse);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  z-index: 1;
+}
+
+.station-image-placeholder .station-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  /* Above the ::before pulse animation (z-index: 1) */
+}
+
+mat-card-content {
+  flex: 1;
+  padding: 16px;
+}
+
+.station-name {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.station-address {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0 0 12px;
+}
+
+.station-address mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.station-specs {
+  margin-bottom: 12px;
+}
+
+.station-specs mat-chip {
+  font-size: 12px;
+}
+
+.station-specs mat-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+}
+
+.station-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.price {
+  color: var(--color-brand-main);
+}
+
+.price-value {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.price-unit {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-primary);
+}
+
+.rating mat-icon {
+  color: var(--color-warning);
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+mat-card-actions {
+  padding: 8px 16px 16px;
+  display: flex;
+  justify-content: space-between;
+}

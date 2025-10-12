@@ -1,0 +1,70 @@
+
+<h2 mat-dialog-title>Détails de la réservation #{{ data.id }}</h2>
+<mat-dialog-content>
+  <mat-list>
+    <div mat-subheader>Informations Générales</div>
+    <mat-list-item>
+      <mat-icon matListItemIcon>ev_station</mat-icon>
+      <div matListItemTitle>Borne</div>
+      <div matListItemLine>
+        {{ data.stationName }} ({{ data.stationCity }})
+      </div>
+    </mat-list-item>
+    <mat-list-item>
+      <mat-icon matListItemIcon>person</mat-icon>
+      <div matListItemTitle>Locataire</div>
+      <div matListItemLine>{{ data.renterName }}</div>
+      <div matListItemLine class="text-secondary">
+        {{ data.renterEmail }}
+      </div>
+    </mat-list-item>
+
+    <mat-divider></mat-divider>
+    <div mat-subheader>Dates et Tarif</div>
+
+    <mat-list-item>
+      <mat-icon matListItemIcon>event</mat-icon>
+      <div matListItemTitle>Période</div>
+      <div matListItemLine>
+        Du {{ data.startDatetime | date : "dd/MM/yyyy HH:mm" }}
+      </div>
+      <div matListItemLine>
+        Au {{ data.endDatetime | date : "dd/MM/yyyy HH:mm" }}
+      </div>
+    </mat-list-item>
+    <mat-list-item>
+      <mat-icon matListItemIcon>payments</mat-icon>
+      <div matListItemTitle>Montant Total</div>
+      <div matListItemLine>{{ data.totalAmount | number : "1.2-2" }} €</div>
+    </mat-list-item>
+
+    <mat-divider></mat-divider>
+    <div mat-subheader>Statut</div>
+
+    <mat-list-item>
+      <mat-icon matListItemIcon>info</mat-icon>
+      <div matListItemTitle>Statut Actuel</div>
+      <div matListItemLine>
+        <mat-chip [class]="'status-' + data.status" selected>{{
+          data.status
+        }}</mat-chip>
+      </div>
+    </mat-list-item>
+
+    @if (data.status === 'refused' || data.status === 'cancelled') {
+    <mat-list-item class="alert-item">
+      <mat-icon matListItemIcon color="warn">warning</mat-icon>
+      <div matListItemTitle>
+        {{ data.status === "refused" ? "Refusé par" : "Annulé par" }}
+        {{ data.refusedBy || data.cancelledBy || "Inconnu" }}
+      </div>
+      <div matListItemLine>
+        {{ data.cancellationReason || "Aucune raison spécifiée" }}
+      </div>
+    </mat-list-item>
+    }
+  </mat-list>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Fermer</button>
+</mat-dialog-actions>

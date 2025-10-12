@@ -1,0 +1,97 @@
+<div class="map-container">
+  <div class="map-header">
+    <button mat-icon-button routerLink="/stations" data-cy="map-back-btn">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1>Carte des bornes</h1>
+  </div>
+
+  <div class="map-content">
+    <div class="search-panel">
+      <mat-card>
+        <mat-card-content>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Rechercher une adresse</mat-label>
+            <input type="text" matInput [formControl]="addressControl" [matAutocomplete]="auto"
+              placeholder="Ex: 10 rue de Rivoli...">
+            <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn"
+              (optionSelected)="onAddressSelected($event)">
+              @for (address of filteredAddresses(); track $index) {
+              <mat-option [value]="address">
+                <span style="display: block; line-height: 1.2;">{{ address.label }}</span>
+                <small style="color: gray; font-size: 11px;">{{ address.postcode }} {{ address.city }}</small>
+              </mat-option>
+              }
+            </mat-autocomplete>
+            <mat-icon matSuffix>search</mat-icon>
+          </mat-form-field>
+
+          <div class="radius-control">
+            <label for="searchRadius">Rayon de recherche: {{ searchRadius() }} km</label>
+            <input id="searchRadius" type="range" min="1" max="100" [ngModel]="searchRadius()"
+              (ngModelChange)="searchRadius.set($event)" />
+          </div>
+
+          <button mat-raised-button color="primary" class="full-width" (click)="getCurrentLocation()" data-cy="map-geolocation-btn">
+            <mat-icon>my_location</mat-icon>
+            Utiliser ma position
+          </button>
+        </mat-card-content>
+      </mat-card>
+
+      @if (stations().length > 0) {
+      <mat-card class="results-card">
+        <mat-card-header>
+          <mat-card-title>{{ stations().length }} bornes à proximité</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="station-list">
+            @for (station of stations(); track station.id) {
+            <div class="station-item" [class.selected]="selectedStation()?.id === station.id"
+              (click)="selectStation(station)" (keyup.enter)="selectStation(station)" tabindex="0">
+              <div class="station-item-info">
+                <div class="station-name-row d-flex align-items-center justify-content-between">
+                  <strong>{{ station.name }}</strong>
+                  <app-status-badge [station]="station"></app-status-badge>
+                </div>
+                <p>{{ getAddress(station) }}</p>
+                <span class="station-price">{{ getPrice(station) | number: '1.2-2' }} €/h</span>
+              </div>
+              <button mat-icon-button [routerLink]="['/stations', station.id]">
+                <mat-icon>chevron_right</mat-icon>
+              </button>
+            </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+      } @else if (!isLoading() && !isInitialLoad()) {
+      <mat-card class="results-card empty-state">
+        <mat-card-content>
+          <mat-icon class="empty-icon">location_off</mat-icon>
+          <p>Aucune borne trouvée dans ce rayon.</p>
+          <small>Essayez d'augmenter le rayon de recherche.</small>
+        </mat-card-content>
+      </mat-card>
+      }
+    </div>
+
+    <div class="map-view">
+      <div id="stations-map" class="map"></div>
+
+      @if (showRedoButton()) {
+      <button mat-raised-button color="accent" class="redo-search-btn" (click)="searchInArea()">
+        <mat-icon>refresh</mat-icon>
+        Rechercher dans cette zone
+      </button>
+      }
+
+      @if (isLoading()) {
+      <div class="map-loading">
+        <mat-spinner></mat-spinner>
+        <p>Chargement de la carte...</p>
+      </div>
+      }
+    </div>
+  </div>
+</div>

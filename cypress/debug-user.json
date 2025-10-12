@@ -1,0 +1,9 @@
+{
+  "id": 33,
+  "email": "admin@elec.com",
+  "firstName": "Super",
+  "lastName": "Admin",
+  "roles": [
+    "admin"
+  ]
+}

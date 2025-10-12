@@ -1,0 +1,162 @@
+<div class="bookings-container">
+  <div class="page-header">
+    <h1>Mes réservations</h1>
+    <button mat-raised-button color="primary" (click)="exportExcel()" [disabled]="isExporting() || isLoading()">
+      <mat-icon>file_download</mat-icon>
+      {{ isExporting() ? 'Export en cours...' : 'Exporter Excel' }}
+    </button>
+  </div>
+
+  @if (isLoading()) {
+  <div class="loading-container">
+    <mat-spinner></mat-spinner>
+  </div>
+  } @else {
+  <div class="dashboard-layout">
+    <!-- LEFT COLUMN: Upcoming Bookings -->
+    <div class="upcoming-section">
+      <div class="section-header">
+        <h2>À venir</h2>
+        @if (upcomingTotal() > 0) {
+        <span class="count-badge">{{ upcomingTotal() }}</span>
+        }
+      </div>
+
+      @if (upcomingBookings().length === 0 && upcomingTotal() === 0) {
+      <div class="empty-state">
+        <mat-icon>event_available</mat-icon>
+        <h3>Aucune réservation à venir</h3>
+        <p>Recherchez une borne et faites votre première réservation !</p>
+        <button mat-raised-button color="primary" routerLink="/stations">
+          Trouver une borne
+        </button>
+      </div>
+      } @else {
+      <div class="bookings-list">
+        @for (booking of upcomingBookings(); track booking.id) {
+        <mat-card class="booking-card upcoming">
+          <mat-card-header>
+            <div class="header-content">
+              <mat-card-title>{{ booking.station?.name || 'Borne' }}</mat-card-title>
+              <mat-card-subtitle>{{ booking.station ? getStationAddressHelper(booking.station) : ''
+                }}</mat-card-subtitle>
+            </div>
+            <div class="status-badge" [ngClass]="'status-' + booking.status.toLowerCase()">
+              {{ getStatusLabel(booking.status) }}
+            </div>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="booking-details">
+              <div class="detail-row">
+                <mat-icon>calendar_today</mat-icon>
+                <span>{{ booking.startTime | date: 'dd/MM/yyyy' }}</span>
+              </div>
+              <div class="detail-row">
+                <mat-icon>schedule</mat-icon>
+                <span>{{ booking.startTime | date: 'HH:mm' }} - {{ booking.endTime | date: 'HH:mm' }}</span>
+              </div>
+              <div class="detail-row price">
+                <mat-icon>euro</mat-icon>
+                <strong>{{ booking.totalPrice | number: '1.2-2' }} €</strong>
+              </div>
+            </div>
+          </mat-card-content>
+          <mat-card-actions align="end">
+            <button mat-button [routerLink]="['/bookings', booking.id]">
+              Détails
+            </button>
+            @if (booking.status === 'pending' || booking.status === 'accepted') {
+            <button mat-button color="warn" (click)="cancelBooking(booking.id)">
+              Annuler
+            </button>
+            }
+          </mat-card-actions>
+        </mat-card>
+        }
+      </div>
+      <mat-paginator [length]="upcomingTotal()" [pageSize]="upcomingPageSize()" [pageIndex]="upcomingPageIndex()"
+        [pageSizeOptions]="[5, 10, 20]" (page)="onUpcomingPageChange($event)"
+        aria-label="Select page of upcoming bookings">
+      </mat-paginator>
+      }
+    </div>
+
+    <!-- RIGHT COLUMN: History (Tabs) -->
+    <div class="history-section">
+      <mat-tab-group (selectedTabChange)="onTabChange($event.index)" mat-stretch-tabs="false" animationDuration="0ms">
+        <mat-tab label="Terminées">
+          <div class="history-list">
+            @if (completedBookings().length === 0) {
+            <div class="empty-tab">
+              <p>Aucune réservation terminée sur cette page.</p>
+            </div>
+            } @else {
+            @for (booking of completedBookings(); track booking.id) {
+            <div class="history-item">
+              <div class="history-info">
+                <h4>{{ booking.station?.name }}</h4>
+                <div class="meta">
+                  <span>{{ booking.startTime | date: 'dd/MM/yyyy' }}</span>
+                  <span class="price">{{ booking.totalPrice | number: '1.2-2' }} €</span>
+                </div>
+              </div>
+              <div class="history-actions">
+                <button mat-icon-button [routerLink]="['/bookings', booking.id]" matTooltip="Détails">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                @if (booking.payment?.paymentStatus === 'completed') {
+                <button mat-icon-button color="primary" (click)="downloadReceipt(booking.id)" matTooltip="Reçu">
+                  <mat-icon>download</mat-icon>
+                </button>
+                }
+              </div>
+            </div>
+            }
+            }
+          </div>
+        </mat-tab>
+
+        <mat-tab label="Annulées / Refusées">
+          <div class="history-list">
+            @if (cancelledBookings().length === 0) {
+            <div class="empty-tab">
+              <p>Aucune réservation annulée sur cette page.</p>
+            </div>
+            } @else {
+            @for (booking of cancelledBookings(); track booking.id) {
+            <div class="history-item faded">
+              <div class="history-info">
+                <h4>{{ booking.station?.name }}</h4>
+                <div class="meta">
+                  <span>{{ booking.startTime | date: 'dd/MM/yyyy' }}</span>
+                  <mat-chip [ngClass]="'status-' + booking.status.toLowerCase()" class="mini-chip">
+                    {{ getStatusLabel(booking.status) }}
+                  </mat-chip>
+                  @if (booking.payment?.paymentStatus === 'refunded') {
+                  <mat-chip class="refund-chip mini-chip">
+                    <mat-icon>money_off</mat-icon>
+                    Remboursé
+                  </mat-chip>
+                  }
+                </div>
+              </div>
+              <div class="history-actions">
+                <button mat-icon-button [routerLink]="['/bookings', booking.id]">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+              </div>
+            </div>
+            }
+            }
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+
+      <!-- Shared Paginator for History -->
+      <mat-paginator [length]="historyTotal()" [pageSize]="historyPageSize()" [pageIndex]="historyPageIndex()"
+        [pageSizeOptions]="[5, 10, 20]" (page)="onHistoryPageChange($event)" aria-label="Select page of history">
+      </mat-paginator>
+    </div>
+  </div>
+  }
+</div>

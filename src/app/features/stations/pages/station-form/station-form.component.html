@@ -1,0 +1,193 @@
+<div class="station-form-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>{{
+        isEditing() ? "Modifier la borne" : "Ajouter une borne"
+        }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="stationForm" (ngSubmit)="onSubmit()">
+        <div class="form-row">
+          <mat-checkbox formControlName="isOnStand" color="primary">
+            Borne sur stand
+          </mat-checkbox>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nom de la borne</mat-label>
+            <input matInput formControlName="name" placeholder="Ex: Borne Centre Ville" />
+            @if (stationForm.get('name')?.hasError('required')) {
+              <mat-error>Le nom est requis</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        @if (!isEditing()) {
+          <div class="form-row">
+            <span class="radio-label">Localisation :</span>
+            <mat-radio-group [value]="locationMode()" (change)="onLocationModeChange($event.value)" color="primary">
+              <mat-radio-button value="NEW">Nouveau lieu</mat-radio-button>
+              <mat-radio-button value="EXISTING" [disabled]="(locationsResource.value()?.length || 0) === 0">
+                Utiliser un lieu existant
+              </mat-radio-button>
+            </mat-radio-group>
+          </div>
+        }
+
+        @if (locationMode() === 'EXISTING') {
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Choisir un lieu enregistré</mat-label>
+              <mat-select [value]="selectedLocationId()" (selectionChange)="onExistingLocationSelected($event.value)">
+                @for (loc of locationsResource.value(); track loc.id) {
+                  <mat-option [value]="loc.id">
+                    {{ loc.address }} ({{ loc.city }})
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        }
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Adresse</mat-label>
+            <input matInput formControlName="address" [matAutocomplete]="auto" placeholder="Rechercher une adresse..."
+              [readonly]="locationMode() === 'EXISTING'" />
+            <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayAddress"
+              (optionSelected)="onAddressSelected($event)">
+              @for (address of addressOptions(); track address) {
+                <mat-option [value]="address">
+                  {{ address.label }}
+                </mat-option>
+              }
+            </mat-autocomplete>
+            @if (stationForm.get('address')?.hasError('required')) {
+              <mat-error>L'adresse est requise</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="form-row two-cols">
+          <mat-form-field appearance="outline">
+            <mat-label>Code Postal</mat-label>
+            <input matInput formControlName="postalCode" placeholder="75001"
+              [readonly]="locationMode() === 'EXISTING'" />
+            @if (stationForm.get('postalCode')?.hasError('required')) {
+              <mat-error>Requis</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Ville</mat-label>
+            <input matInput formControlName="city" placeholder="Paris" [readonly]="locationMode() === 'EXISTING'" />
+            @if (stationForm.get('city')?.hasError('required')) {
+              <mat-error>Requis</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="form-row two-cols">
+          <mat-form-field appearance="outline">
+            <mat-label>Latitude</mat-label>
+            <input matInput type="number" formControlName="latitude" [readonly]="locationMode() === 'EXISTING'" />
+            @if (stationForm.get('latitude')?.hasError('required')) {
+              <mat-error>Requis</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Longitude</mat-label>
+            <input matInput type="number" formControlName="longitude" [readonly]="locationMode() === 'EXISTING'" />
+            @if (stationForm.get('longitude')?.hasError('required')) {
+              <mat-error>Requis</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Puissance (kW)</mat-label>
+            <input matInput type="number" formControlName="power" />
+            @if (stationForm.get('power')?.hasError('required')) {
+              <mat-error>Requis</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="form-row two-cols">
+          <mat-form-field appearance="outline">
+            <mat-label>Type de connecteur</mat-label>
+            <mat-select formControlName="connector">
+              <mat-option value="TYPE2">Type 2</mat-option>
+              <mat-option value="TYPE2S">Type 2S</mat-option>
+              <mat-option value="CCS">CCS</mat-option>
+              <mat-option value="CHADEMO">CHAdeMO</mat-option>
+              <mat-option value="DOMESTIC">Prise domestique</mat-option>
+            </mat-select>
+            @if (stationForm.get('connector')?.hasError('required')) {
+              <mat-error>Le type de connecteur est requis</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Prix (€/kWh)</mat-label>
+            <input matInput type="number" formControlName="pricePerKwh" />
+            @if (stationForm.get('pricePerKwh')?.hasError('required')) {
+              <mat-error>Requis</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Instructions</mat-label>
+            <textarea matInput formControlName="instructions" placeholder="Instructions pour accéder à la borne..."
+              rows="3"></textarea>
+          </mat-form-field>
+        </div>
+
+        <div class="photos-section">
+          <h3>Photos</h3>
+          <div formArrayName="photos">
+            @for (photo of photos.controls; track i; let i = $index) {
+              <div class="photo-row">
+                @if (photos.at(i).value) {
+                  <div class="photo-preview">
+                    <img [src]="photos.at(i).value" alt="Preview"
+                      style="max-height: 100px; border-radius: 8px; margin-bottom: 8px;">
+                  </div>
+                }
+                <div class="file-input-container">
+                  <button type="button" mat-stroked-button (click)="fileInput.click()">
+                    <mat-icon>cloud_upload</mat-icon> Choisir une photo
+                  </button>
+                  <input #fileInput type="file" (change)="onPhotoSelected($event, i)" accept="image/*"
+                    style="display: none;">
+                  <span class="file-hint" style="margin-left: 10px; font-size: 12px; color: gray;">Max 5Mo</span>
+                </div>
+                <button mat-icon-button color="warn" type="button" (click)="removePhoto(i)"
+                  [disabled]="photos.length === 1">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+          <button mat-button type="button" (click)="addPhoto()">
+            <mat-icon>add</mat-icon> Ajouter une photo
+          </button>
+        </div>
+
+        <div class="form-actions">
+          <button mat-button type="button" routerLink="/stations">
+            Annuler
+          </button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="stationForm.invalid || isSubmitting()">
+            {{ isEditing() ? "Mettre à jour" : "Créer" }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

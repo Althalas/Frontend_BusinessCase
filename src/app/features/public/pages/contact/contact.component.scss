@@ -1,0 +1,61 @@
+.page-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+mat-card {
+  padding: 32px;
+  border-radius: var(--radius-xl);
+}
+
+mat-card-title {
+  color: var(--color-brand-main);
+  margin-bottom: 32px;
+  font-size: 2rem;
+  text-align: center;
+}
+
+.contact-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 48px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.contact-info {
+  background: var(--bg-hover);
+  padding: 24px;
+  border-radius: var(--radius-lg);
+
+  h3 {
+    color: var(--color-brand-main);
+  }
+
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+
+    mat-icon {
+      color: var(--color-brand-main);
+    }
+  }
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  button {
+    align-self: flex-end;
+    padding: 8px 32px;
+    font-size: 1.1rem;
+  }
+}

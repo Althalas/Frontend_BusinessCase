@@ -1,0 +1,127 @@
+<mat-toolbar color="primary" class="navbar">
+  <div class="navbar-container">
+    <div class="navbar-brand">
+      <a routerLink="/" class="brand-link">
+        <mat-icon>bolt</mat-icon>
+        <span>Electricity Business</span>
+      </a>
+    </div>
+
+    <!-- Theme Toggle (Always Visible) -->
+    <div style="display: flex; align-items: center; gap: 8px; margin-right: 8px">
+      <button mat-icon-button (click)="toggleTheme()"
+        [matTooltip]="themeService.darkMode() ? 'Passer en clair' : 'Passer en sombre'">
+        <mat-icon>{{ themeService.darkMode() ? "light_mode" : "dark_mode" }}</mat-icon>
+      </button>
+    </div>
+
+    <!-- HAMBURGER MENU (Mobile Only) -->
+    <button mat-icon-button [matMenuTriggerFor]="mobileMenu" class="mobile-menu-btn">
+      <mat-icon>menu</mat-icon>
+    </button>
+
+    <mat-menu #mobileMenu="matMenu">
+      @if (isAuthenticated()) {
+      @if (!isAdmin()) {
+      <button mat-menu-item routerLink="/dashboard">
+        <mat-icon>dashboard</mat-icon> <span>Tableau de bord</span>
+      </button>
+      }
+      @if (isAdmin()) {
+      <button mat-menu-item routerLink="/admin">
+        <mat-icon>admin_panel_settings</mat-icon> <span>Admin</span>
+      </button>
+      }
+      <button mat-menu-item routerLink="/stations">
+        <mat-icon>ev_station</mat-icon> <span>Trouver une borne</span>
+      </button>
+      <button mat-menu-item routerLink="/bookings">
+        <mat-icon>calendar_today</mat-icon> <span>Mes réservations</span>
+      </button>
+      @if (isOwner()) {
+      <button mat-menu-item routerLink="/dashboard/my-stations">
+        <mat-icon>home_work</mat-icon> <span>Mes bornes</span>
+      </button>
+      }
+      <button mat-menu-item routerLink="/map">
+        <mat-icon>map</mat-icon> <span>Carte live</span>
+      </button>
+      <mat-divider></mat-divider>
+      <button mat-menu-item routerLink="/dashboard/profile">
+        <mat-icon>settings</mat-icon> <span>Mon Compte</span>
+      </button>
+      <button mat-menu-item (click)="logout()">
+        <mat-icon>logout</mat-icon> <span>Déconnexion</span>
+      </button>
+      } @else {
+      <button mat-menu-item routerLink="/auth/login">Connexion</button>
+      <button mat-menu-item routerLink="/auth/register">Inscription</button>
+      }
+    </mat-menu>
+
+    <!-- DESKTOP NAV (Hidden on Mobile) -->
+    @if (isAuthenticated()) {
+    <nav class="navbar-nav desktop-only">
+      @if (!isAdmin()) {
+      <a mat-button routerLink="/dashboard" routerLinkActive="active">
+        <mat-icon>dashboard</mat-icon>
+        Tableau de bord
+      </a>
+      } @if (isAdmin()) {
+      <a mat-button routerLink="/admin" routerLinkActive="active">
+        <mat-icon>admin_panel_settings</mat-icon>
+        Admin
+      </a>
+      }
+      <a mat-button routerLink="/stations" routerLinkActive="active">
+        <mat-icon>ev_station</mat-icon>
+        Trouver une borne
+      </a>
+      <a mat-button routerLink="/bookings" routerLinkActive="active">
+        <mat-icon>calendar_today</mat-icon>
+        Mes réservations
+      </a>
+      @if (isOwner()) {
+      <a mat-button routerLink="/dashboard/my-stations" routerLinkActive="active">
+        <mat-icon>home_work</mat-icon>
+        Mes bornes
+      </a>
+      }
+      <a mat-button routerLink="/map" routerLinkActive="active">
+        <mat-icon>map</mat-icon>
+        Carte live
+      </a>
+    </nav>
+
+    <!-- User Menu Desktop -->
+    @if (currentUser(); as user) {
+    <div class="navbar-user desktop-only">
+      <button mat-icon-button [matMenuTriggerFor]="userMenu" class="avatar-button" aria-label="Menu utilisateur">
+        @if (user.avatarUrl) {
+        <img [src]="getAvatarUrl(user)" alt="Avatar" class="navbar-avatar" />
+        } @else {
+        <mat-icon>account_circle</mat-icon>
+        }
+      </button>
+      <mat-menu #userMenu="matMenu">
+        <button mat-menu-item routerLink="/dashboard/profile">
+          <mat-icon>settings</mat-icon>
+          <span>Paramètres du compte</span>
+        </button>
+        <button mat-menu-item (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Déconnexion</span>
+        </button>
+      </mat-menu>
+    </div>
+    } } @else {
+    <!-- Guest Desktop -->
+    <div class="navbar-auth desktop-only">
+      <a mat-button routerLink="/auth/login">Connexion</a>
+      <a mat-raised-button color="accent" routerLink="/auth/register">
+        Inscription
+      </a>
+    </div>
+    }
+  </div>
+</mat-toolbar>

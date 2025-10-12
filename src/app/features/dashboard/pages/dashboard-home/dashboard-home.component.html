@@ -1,0 +1,419 @@
+<div class="dashboard-container">
+    <!-- WELCOME BANNER -->
+    <div class="dashboard-header-banner">
+        <div class="banner-content">
+            <h1>Bonjour, {{ userName() }}</h1>
+            <p>Bienvenue sur votre espace personnel. Gérez vos bornes, vos recharges et vos véhicules en toute
+                simplicité.</p>
+        </div>
+        <div class="banner-actions">
+            <!-- If Admin: Show Admin Dashboard Link -->
+            @if (currentUser()?.roles?.includes('admin')) {
+            <button mat-raised-button class="action-btn-primary" routerLink="/admin">
+                <mat-icon>dashboard</mat-icon> Dashboard Admin
+            </button>
+            <button mat-stroked-button class="action-btn-secondary" routerLink="/dashboard/profile">
+                <mat-icon>settings</mat-icon> Mon Compte
+            </button>
+            } @else {
+            <!-- If Client/Owner -->
+            <button mat-raised-button class="action-btn-primary" routerLink="/stations">
+                <mat-icon>search</mat-icon> Trouver une borne
+            </button>
+            <button mat-stroked-button class="action-btn-secondary" routerLink="/dashboard/profile">
+                <mat-icon>settings</mat-icon> Mon Compte
+            </button>
+            @if (currentUser()?.roles?.includes('owner')) {
+            <button mat-stroked-button class="action-btn-secondary" routerLink="/stations/new">
+                <mat-icon>add_location_alt</mat-icon> Ajouter une borne
+            </button>
+            }
+            }
+        </div>
+    </div>
+
+    @if (!currentUser()?.roles?.includes('admin')) {
+    <mat-tab-group animationDuration="300ms" class="dashboard-tabs" mat-stretch-tabs="false" mat-align-tabs="start">
+
+        <!-- TAB 1: VUE D'ENSEMBLE (Reservations) -->
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <div class="custom-tab-label">
+                    <mat-icon class="tab-icon">dashboard</mat-icon>
+                    <span>Aperçu</span>
+                </div>
+            </ng-template>
+
+            <div class="tab-content fadeIn">
+                <!-- OVERVIEW GRID -->
+                <div class="dashboard-overview-grid">
+
+                    <!-- LEFT COLUMN: UPCOMING -->
+                    <section class="section-block upcoming-section">
+                        <div class="section-header">
+                            <h2><mat-icon>schedule</mat-icon> Réservations à venir</h2>
+                        </div>
+
+                        @if (isLoadingUpcoming()) {
+                        <div class="spinner-container"><mat-spinner diameter="40"></mat-spinner></div>
+                        } @else if (upcomingTotal() === 0) {
+                        <div class="empty-state-card">
+                            <mat-icon class="state-icon">event_available</mat-icon>
+                            <h3>Rien de prévu ?</h3>
+                            <p>Il est temps de planifier votre prochaine recharge.</p>
+                            <button mat-button color="primary" routerLink="/map">Voir la carte</button>
+                        </div>
+                        } @else {
+                        <div class="bookings-grid">
+                            @for (booking of upcomingBookings(); track booking.id) {
+                            <mat-card class="booking-card upcoming-card" [routerLink]="['/bookings', booking.id]">
+                                <div class="booking-status-stripe" [class]="booking.status"></div>
+                                <mat-card-content>
+                                    <div class="booking-header">
+                                        <h3>{{ booking.station?.name }}</h3>
+                                        <mat-chip [color]="getBookingStatusColor(booking.status)" selected>{{
+                                            booking.status }}</mat-chip>
+                                    </div>
+                                    <div class="booking-details">
+                                        <p><mat-icon>calendar_today</mat-icon> <span>{{ booking.startTime | date:'dd MMM
+                                                yyyy' }}</span></p>
+                                        <p><mat-icon>schedule</mat-icon> <span>{{ booking.startTime | date:'HH:mm' }} -
+                                                {{ booking.endTime | date:'HH:mm' }}</span></p>
+                                        <div class="price-tag">{{ booking.totalPrice | number:'1.2-2' }} €</div>
+                                    </div>
+                                </mat-card-content>
+                            </mat-card>
+                            }
+                        </div>
+                        <mat-paginator [length]="upcomingTotal()" [pageSize]="upcomingPageSize()"
+                            [pageSizeOptions]="[3, 5, 10]" (page)="onUpcomingPageChange($event)"
+                            [pageIndex]="upcomingPageIndex()">
+                        </mat-paginator>
+                        }
+                    </section>
+
+                    <!-- RIGHT COLUMN: PAST HISTORY -->
+                    <section class="section-block history-section">
+                        <div class="section-header" style="justify-content: space-between;">
+                            <h2><mat-icon>history</mat-icon> Historique récent</h2>
+                            <button mat-stroked-button color="primary" routerLink="/bookings">
+                                Voir tout l'historique
+                            </button>
+                        </div>
+                        @if (!isLoadingHistory() && historyTotal() > 0) {
+                        <div class="table-responsive">
+                            <table mat-table [dataSource]="pastBookings()" class="full-width-table">
+                                <!-- Station Column -->
+                                <ng-container matColumnDef="station">
+                                    <th mat-header-cell *matHeaderCellDef>Station</th>
+                                    <td mat-cell *matCellDef="let booking" class="station-cell">
+                                        <span class="station-name">{{ booking.station?.name }}</span>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Date Column -->
+                                <ng-container matColumnDef="date">
+                                    <th mat-header-cell *matHeaderCellDef>Date</th>
+                                    <td mat-cell *matCellDef="let booking" class="date-cell">
+                                        {{ booking.startTime | date : "dd/MM/yy" }}
+                                    </td>
+                                </ng-container>
+
+                                <!-- Status Column -->
+                                <ng-container matColumnDef="status">
+                                    <th mat-header-cell *matHeaderCellDef>Statut</th>
+                                    <td mat-cell *matCellDef="let booking">
+                                        <span class="status-badge" [class]="booking.status">{{ booking.status }}</span>
+                                    </td>
+                                </ng-container>
+
+                                <!-- Actions -->
+                                <ng-container matColumnDef="actions">
+                                    <th mat-header-cell *matHeaderCellDef></th>
+                                    <td mat-cell *matCellDef="let booking">
+                                        <a mat-icon-button color="primary"
+                                            [routerLink]="['/bookings', booking.id]"><mat-icon>chevron_right</mat-icon></a>
+                                    </td>
+                                </ng-container>
+
+                                <tr mat-header-row *matHeaderRowDef="['station', 'date', 'status', 'actions']"></tr>
+                                <tr mat-row *matRowDef="let row; columns: ['station', 'date', 'status', 'actions']"
+                                    class="booking-row"></tr>
+                            </table>
+                        </div>
+                        <mat-paginator [length]="historyTotal()" [pageSize]="historyPageSize()"
+                            [pageSizeOptions]="[5, 10, 20]" (page)="onHistoryPageChange($event)"
+                            [pageIndex]="historyPageIndex()">
+                        </mat-paginator>
+                        } @else {
+                        <p class="text-muted">Aucun historique récent.</p>
+                        }
+                    </section>
+                </div>
+            </div>
+        </mat-tab>
+
+        <!-- TAB 2: MES VÉHICULES -->
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <div class="custom-tab-label">
+                    <mat-icon class="tab-icon">directions_car</mat-icon>
+                    <span>Véhicules</span>
+                </div>
+            </ng-template>
+            <div class="tab-content fadeIn">
+                <div class="vehicles-layout">
+                    <!-- Add Vehicle Form -->
+                    <mat-card class="add-vehicle-card">
+                        <mat-card-header>
+                            <mat-card-title>Nouveau Véhicule</mat-card-title>
+                        </mat-card-header>
+                        <mat-card-content>
+                            <form [formGroup]="vehicleForm" (ngSubmit)="onSubmitVehicle()" class="vehicle-form">
+                                <div class="form-grid">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Marque</mat-label>
+                                        <input matInput formControlName="brand" placeholder="Ex: Tesla" />
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Modèle</mat-label>
+                                        <input matInput formControlName="model" placeholder="Ex: Model 3" />
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Plaque</mat-label>
+                                        <input matInput formControlName="licensePlate" placeholder="AA-123-BB"
+                                            style="text-transform: uppercase;" />
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Connecteur</mat-label>
+                                        <mat-select formControlName="connectorType">
+                                            <mat-option value="TYPE2">Type 2</mat-option>
+                                            <mat-option value="CCS">CCS</mat-option>
+                                            <mat-option value="CHADEMO">CHAdeMO</mat-option>
+                                            <mat-option value="DOMESTIC">Domestique</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Capacité (kWh)</mat-label>
+                                        <input matInput type="number" formControlName="batteryCapacity"
+                                            placeholder="Ex: 60" />
+                                    </mat-form-field>
+                                </div>
+                                <div class="form-actions">
+                                    <button mat-raised-button color="primary" type="submit"
+                                        [disabled]="vehicleForm.invalid || isAddingVehicle()">
+                                        <mat-icon>add</mat-icon> Ajouter ce véhicule
+                                    </button>
+                                </div>
+                            </form>
+                        </mat-card-content>
+                    </mat-card>
+
+                    <!-- Vehicle List -->
+                    <div class="vehicles-list-section">
+                        <h3>Vos véhicules</h3>
+                        @if (myVehicles().length === 0) {
+                        <div class="empty-state-simple">Aucun véhicule enregistré.</div>
+                        } @else {
+                        <div class="vehicles-grid">
+                            @for (vehicle of myVehicles(); track vehicle.id) {
+                            <mat-card class="vehicle-card">
+                                <div class="vehicle-card-content">
+                                    <div class="vehicle-icon-circle">
+                                        <mat-icon>electric_car</mat-icon>
+                                    </div>
+                                    <div class="vehicle-details">
+                                        <h4>{{ vehicle.brand }} {{ vehicle.model }}</h4>
+                                        <p class="plate">{{ vehicle.licensePlate }}</p>
+                                        <div class="tags">
+                                            <span class="tag">{{ vehicle.connectorType }}</span>
+                                            @if(vehicle.batteryCapacity){ <span class="tag capacity">{{
+                                                vehicle.batteryCapacity }} kWh</span> }
+                                        </div>
+                                    </div>
+                                    <button mat-icon-button color="warn" class="delete-btn"
+                                        (click)="deleteVehicle(vehicle.id)">
+                                        <mat-icon>delete_outline</mat-icon>
+                                    </button>
+                                </div>
+                            </mat-card>
+                            }
+                        </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </mat-tab>
+
+        <!-- TAB 3: MES BORNES -->
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <div class="custom-tab-label">
+                    <mat-icon class="tab-icon">ev_station</mat-icon>
+                    <span>Mes Bornes</span>
+                </div>
+            </ng-template>
+            <div class="tab-content fadeIn">
+                <div class="tab-actions-header">
+                    <h2>Vos bornes partagées ({{ myStations().length }})</h2>
+                    <button mat-raised-button color="primary" routerLink="/stations/new">
+                        <mat-icon>add</mat-icon> Ajouter une borne
+                    </button>
+                </div>
+
+                @if (isLoadingStations()) {
+                <div class="spinner-container"><mat-spinner diameter="40"></mat-spinner></div>
+                } @else if (myStations().length === 0) {
+                <div class="empty-state-card">
+                    <mat-icon class="state-icon">ev_station</mat-icon>
+                    <h3>Aucune borne enregistrée</h3>
+                    <p>Vous n'avez pas encore ajouté de borne.</p>
+                    <button mat-raised-button color="primary" routerLink="/stations/new">
+                        <mat-icon>add</mat-icon> Ajouter une borne
+                    </button>
+                </div>
+                } @else {
+                <div class="stations-grid">
+                    @for (station of myStations(); track station.id) {
+                    <mat-card class="station-card">
+                        <mat-card-content>
+                            <div class="station-header-row">
+                                <div class="station-icon-box">
+                                    <mat-icon>ev_station</mat-icon>
+                                </div>
+                                <div class="station-actions-menu">
+                                    <button mat-icon-button [matMenuTriggerFor]="menu">
+                                        <mat-icon>more_vert</mat-icon>
+                                    </button>
+                                    <mat-menu #menu="matMenu">
+                                        <button mat-menu-item [routerLink]="['/stations', station.id]">
+                                            <mat-icon>visibility</mat-icon> Voir
+                                        </button>
+                                        <button mat-menu-item [routerLink]="['/stations', station.id, 'edit']">
+                                            <mat-icon>edit</mat-icon> Modifier
+                                        </button>
+                                        <button mat-menu-item (click)="deleteStation(station)" class="danger-menu-item">
+                                            <mat-icon>delete</mat-icon> Supprimer
+                                        </button>
+                                    </mat-menu>
+                                </div>
+                            </div>
+
+                            <h3 class="station-title">{{ station.name }}</h3>
+                            <p class="station-address"><mat-icon>location_on</mat-icon> {{ getAddress(station) }}</p>
+
+                            <div class="station-meta">
+                                <div class="meta-item">
+                                    <span class="label">Puissance</span>
+                                    <mat-chip>{{ getPower(station) | number: '1.1-1' }} kW</mat-chip>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="label">Prix</span>
+                                    <span class="value price">{{ getPrice(station) | number: '1.2-2' }} €/h</span>
+                                </div>
+                            </div>
+
+                            <mat-divider></mat-divider>
+
+                            <div class="station-stats-row">
+                                <div class="stat">
+                                    <span class="stat-num">{{ getBookingsCount(station) }}</span>
+                                    <span class="stat-lbl">Réservations</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-num revenue">{{ getRevenue(station) | number: '1.0-0' }} €</span>
+                                    <span class="stat-lbl">Revenus</span>
+                                </div>
+                            </div>
+                        </mat-card-content>
+                    </mat-card>
+                    }
+                </div>
+                }
+            </div>
+        </mat-tab>
+
+        <!-- TAB 4: FAVORIS -->
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <div class="custom-tab-label">
+                    <mat-icon class="tab-icon">favorite</mat-icon>
+                    <span>Favoris</span>
+                </div>
+            </ng-template>
+            <div class="tab-content fadeIn">
+                @if (isLoadingFavorites()) {
+                <div class="spinner-container"><mat-spinner diameter="40"></mat-spinner></div>
+                } @else if (myFavorites().length === 0) {
+                <div class="empty-state-card">
+                    <mat-icon class="state-icon">favorite_border</mat-icon>
+                    <h3>Aucun favori</h3>
+                    <p>Ajoutez des bornes à vos favoris pour les retrouver ici.</p>
+                </div>
+                } @else {
+                <div class="favorites-grid">
+                    @for (station of myFavorites(); track station.id) {
+                    <mat-card class="fav-card" [routerLink]="['/stations', station.id]">
+                        <div class="fav-image">
+                            <!-- Placeholder/Real Image logic -->
+                            <mat-icon>image</mat-icon>
+                        </div>
+                        <mat-card-content>
+                            <h3>{{ station.name }}</h3>
+                            <p class="location"><mat-icon>location_on</mat-icon> {{ station.city }}</p>
+                            <button mat-icon-button color="warn" class="remove-fav-btn"
+                                (click)="$event.stopPropagation(); removeFavorite(station.id)" matTooltip="Retirer">
+                                <mat-icon>favorite</mat-icon>
+                            </button>
+                        </mat-card-content>
+                    </mat-card>
+                    }
+                </div>
+                }
+            </div>
+        </mat-tab>
+
+        <!-- TAB 5: AVIS (If relevant, simplified) -->
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <div class="custom-tab-label">
+                    <mat-icon class="tab-icon">star</mat-icon>
+                    <span>Avis</span>
+                </div>
+            </ng-template>
+            <div class="tab-content fadeIn">
+                @if (isLoadingReviews()) {
+                <div class="spinner-container"><mat-spinner diameter="40"></mat-spinner></div>
+                } @else if (myStationReviews().length === 0) {
+                <div class="empty-state-card">
+                    <mat-icon>rate_review</mat-icon>
+                    <p>Aucun avis reçu pour le moment.</p>
+                </div>
+                } @else {
+                <div class="reviews-list">
+                    @for (review of myStationReviews(); track review.id) {
+                    <mat-card class="review-card">
+                        <mat-card-header>
+                            <img mat-card-avatar [src]="getReviewerAvatar(review)" alt="User">
+                            <mat-card-title>{{ review.user?.firstName }} {{ review.user?.lastName }}</mat-card-title>
+                            <mat-card-subtitle>{{ review.createdAt | date }}</mat-card-subtitle>
+                        </mat-card-header>
+                        <mat-card-content>
+                            <div class="rating-stars">
+                                @for (star of [1,2,3,4,5]; track star) {
+                                <mat-icon [class.filled]="star <= review.rating">star</mat-icon>
+                                }
+                            </div>
+                            <p class="comment">"{{ review.comment }}"</p>
+                            <p class="on-station">Sur : {{ review.station?.name }}</p>
+                        </mat-card-content>
+                    </mat-card>
+                    }
+                </div>
+                }
+            </div>
+        </mat-tab>
+
+    </mat-tab-group>
+    }
+</div>

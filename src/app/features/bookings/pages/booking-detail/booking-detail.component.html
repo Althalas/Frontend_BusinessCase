@@ -1,0 +1,201 @@
+@if (isLoading()) {
+<div class="loading-container">
+  <mat-spinner></mat-spinner>
+</div>
+} @else if (booking(); as booking) {
+<div class="booking-detail-container">
+  <div class="page-header">
+    <button
+      mat-icon-button
+      routerLink="/bookings"
+      aria-label="Retour à la liste"
+    >
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1>Réservation #{{ booking.id }}</h1>
+    <mat-chip [ngClass]="'status-' + booking.status.toLowerCase()">
+      {{ getStatusLabel(booking.status) }}
+    </mat-chip>
+  </div>
+
+  <div class="booking-content">
+    <mat-card class="info-card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>ev_station</mat-icon>
+        <mat-card-title>{{ booking.station?.name || "Borne" }}</mat-card-title>
+        <mat-card-subtitle>{{
+          booking.station ? getStationAddressHelper(booking.station) : ""
+        }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="info-grid">
+          <div class="info-item">
+            <mat-icon>calendar_today</mat-icon>
+            <div>
+              <strong>Date</strong>
+              <p>{{ booking.startTime | date : "dd/MM/yyyy" }}</p>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <mat-icon>schedule</mat-icon>
+            <div>
+              <strong>Horaire</strong>
+              <p>
+                {{ booking.startTime | date : "HH:mm" }} -
+                {{ booking.endTime | date : "HH:mm" }}
+              </p>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <mat-icon>payments</mat-icon>
+            <div>
+              <strong>Montant total</strong>
+              <p class="price">{{ booking.totalPrice | number : "1.2-2" }} €</p>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+
+      @if (booking.status === 'pending') {
+      <mat-card-actions>
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="processPayment()"
+          [disabled]="isProcessing()"
+        >
+          <mat-icon>payment</mat-icon>
+          Payer maintenant
+        </button>
+        @if (canCancel(booking)) {
+        <button
+          mat-raised-button
+          color="warn"
+          (click)="cancelBooking()"
+          [disabled]="isProcessing()"
+          data-cy="booking-cancel-btn"
+        >
+          <mat-icon>cancel</mat-icon>
+          Annuler
+        </button>
+        }
+      </mat-card-actions>
+      } @else if (booking.status === 'accepted') {
+      <mat-card-actions>
+        @if (canCancel(booking)) {
+        <button
+          mat-raised-button
+          color="warn"
+          (click)="cancelBooking()"
+          [disabled]="isProcessing()"
+          data-cy="booking-cancel-btn"
+        >
+          <mat-icon>cancel</mat-icon>
+          Annuler la réservation
+        </button>
+        }
+      </mat-card-actions>
+      }
+    </mat-card>
+
+    <mat-card class="timeline-card">
+      <mat-card-header>
+        <mat-card-title>Historique</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="timeline">
+          <div class="timeline-item completed">
+            <mat-icon>check_circle</mat-icon>
+            <div>
+              <strong>Réservation créée</strong>
+              <p>{{ booking.createdAt | date : "dd/MM/yyyy HH:mm" }}</p>
+            </div>
+          </div>
+
+          @if (booking.payment?.paymentStatus === 'completed') {
+          <div class="timeline-item completed">
+            <mat-icon>check_circle</mat-icon>
+            <div>
+              <strong>Réservation confirmée</strong>
+              <p>Paiement reçu. Votre créneau est réservé.</p>
+            </div>
+          </div>
+          } @if (booking.status === 'refused') {
+          <div class="timeline-item cancelled">
+            <mat-icon>cancel</mat-icon>
+            <div>
+              <strong>Réservation refusée</strong>
+              <p>Le propriétaire a refusé la réservation</p>
+            </div>
+          </div>
+          } @if (booking.status === 'completed') {
+          <div class="timeline-item completed">
+            <mat-icon>check_circle</mat-icon>
+            <div>
+              <strong>Charge terminée</strong>
+              <p>Session complétée avec succès</p>
+            </div>
+          </div>
+          } @if (booking.status === 'cancelled') {
+          <div class="timeline-item cancelled">
+            <mat-icon>cancel</mat-icon>
+            <div>
+              <strong>Réservation annulée</strong>
+              <p>La réservation a été annulée</p>
+            </div>
+          </div>
+          }
+          @if (booking.payment?.paymentStatus === 'refunded') {
+          <div class="timeline-item refunded">
+            <mat-icon>money_off</mat-icon>
+            <div>
+              <strong>Remboursement effectué</strong>
+              <p>Votre paiement a été remboursé</p>
+            </div>
+          </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    @if (booking.payment?.paymentStatus === 'completed') {
+    <mat-card class="actions-card">
+      <mat-card-header>
+        <mat-card-title>Facturation</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p>Retrouvez le justificatif de votre réservation.</p>
+      </mat-card-content>
+      <mat-card-actions>
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="downloadReceipt()"
+          [disabled]="isProcessing()"
+        >
+          <mat-icon>picture_as_pdf</mat-icon>
+          Télécharger le reçu
+        </button>
+      </mat-card-actions>
+    </mat-card>
+    } @if (booking.status === 'completed') {
+    <mat-card class="review-card">
+      <mat-card-header>
+        <mat-card-title>Votre avis</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p>Partagez votre expérience pour aider les autres utilisateurs.</p>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-raised-button color="accent">
+          <mat-icon>rate_review</mat-icon>
+          Laisser un avis
+        </button>
+      </mat-card-actions>
+    </mat-card>
+    }
+  </div>
+</div>
+}

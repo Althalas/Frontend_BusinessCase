@@ -1,0 +1,67 @@
+<div class="verify-container">
+  <mat-card>
+    <mat-card-content>
+      <!-- Success State -->
+      <!-- Success State -->
+      @if (success()) {
+        <div class="status-content">
+          <mat-icon class="success-icon">check_circle</mat-icon>
+          <h2>Email vérifié !</h2>
+          <p>Votre compte a été activé avec succès.</p>
+          <a mat-raised-button color="primary" routerLink="/auth/login">
+            Se connecter
+          </a>
+        </div>
+      } @else {
+        <!-- Form/Error State -->
+        <div class="status-content">
+          @if (isLoading()) {
+            <mat-spinner diameter="48"></mat-spinner>
+            <p>Vérification en cours...</p>
+          } @else {
+            <h2>Validation du compte</h2>
+            <p>Entrez le code reçu par email</p>
+
+            <form [formGroup]="verifyForm" (ngSubmit)="onSubmit()">
+              <mat-form-field appearance="outline">
+                <mat-label>Email</mat-label>
+                <input matInput formControlName="email" type="email" placeholder="votre@email.com" data-cy="verify-email-input">
+                @if (verifyForm.get('email')?.hasError('required')) {
+                  <mat-error>Email requis</mat-error>
+                }
+                @if (verifyForm.get('email')?.hasError('email')) {
+                  <mat-error>Email invalide</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Code de validation</mat-label>
+                <input matInput formControlName="code" placeholder="Ex: A1B2C3" data-cy="verify-code-input">
+                @if (verifyForm.get('code')?.hasError('required')) {
+                  <mat-error>Code requis</mat-error>
+                }
+                @if (verifyForm.get('code')?.hasError('minlength')) {
+                  <mat-error>Code trop court</mat-error>
+                }
+              </mat-form-field>
+
+              @if (errorMessage()) {
+                <mat-error class="global-error">
+                  {{ errorMessage() }}
+                </mat-error>
+              }
+
+              <button mat-raised-button color="primary" type="submit" [disabled]="verifyForm.invalid || isLoading()" data-cy="verify-submit-btn">
+                Valider mon compte
+              </button>
+            </form>
+
+            <a mat-button color="accent" routerLink="/auth/login" class="login-link">
+              Retour à la connexion
+            </a>
+          }
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

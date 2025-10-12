@@ -1,0 +1,93 @@
+<div class="stations-container">
+  <div class="page-header">
+    <h1>Bornes de recharge disponibles</h1>
+    <div class="header-actions">
+      <button mat-raised-button color="primary" routerLink="/map" data-cy="stations-viewmap-btn">
+        <mat-icon>map</mat-icon>
+        Voir la carte
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtres -->
+  <!-- Filtres -->
+  <mat-card class="filters-card">
+    <mat-card-content>
+      <form [formGroup]="filterForm" class="filters-form">
+
+        <!-- Barre de recherche (Instantané) -->
+        <mat-form-field appearance="outline" class="search-field full-width">
+          <mat-label>Rechercher (Nom, Ville, Adresse)</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput formControlName="search" placeholder="Ex: Paris, Borne #12..." data-cy="stations-search-input" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Type de connecteur</mat-label>
+          <mat-select formControlName="connectorType" data-cy="stations-connector-select">
+            <mat-option value="">Tous</mat-option>
+            <mat-option value="TYPE2">Type 2</mat-option>
+            <mat-option value="CCS">CCS</mat-option>
+            <mat-option value="CHADEMO">CHAdeMO</mat-option>
+            <mat-option value="DOMESTIC">Domestique</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Puissance min (kW)</mat-label>
+          <input matInput type="number" formControlName="minPower" placeholder="Ex: 7" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Prix max (€/h)</mat-label>
+          <input matInput type="number" formControlName="maxPrice" step="0.01" placeholder="Ex: 5.00" />
+        </mat-form-field>
+
+        <mat-slide-toggle formControlName="onlyMyVehicles" color="primary">
+          Compatible véhicules
+        </mat-slide-toggle>
+
+        <!-- Bouton Apply Backend Filters si besoin, sinon Reset suffit -->
+        <button mat-raised-button color="primary" type="button" (click)="applyBackendFilters()" data-cy="stations-filter-btn">
+          <mat-icon>filter_list</mat-icon>
+          Filtrer
+        </button>
+
+        <button mat-button type="button" (click)="resetFilters()" data-cy="stations-reset-btn">
+          Réinitialiser
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Liste des Stations -->
+  <!-- Liste des Stations -->
+  @if (isLoading()) {
+  <div class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Chargement des bornes...</p>
+  </div>
+  } @else if (stations().length === 0) {
+  <mat-card class="empty-state">
+    <mat-card-content>
+      <mat-icon>ev_station</mat-icon>
+      <h2>Aucune borne trouvée</h2>
+      <p>Modifiez vos filtres ou recherchez dans une autre zone.</p>
+      <button mat-button color="primary" (click)="resetFilters()">Réinitialiser</button>
+    </mat-card-content>
+  </mat-card>
+  } @else {
+  <div class="stations-grid">
+    @for (station of stations(); track station.id) {
+    <app-station-card [station]="station" [isFavorite]="favoriteIds().has(station.id)"
+      (toggleFavorite)="onToggleFavorite($event)">
+    </app-station-card>
+    }
+  </div>
+
+  <!-- Pagination -->
+  <mat-paginator [length]="totalItems()" [pageSize]="pageSize()" [pageIndex]="pageIndex()"
+    [pageSizeOptions]="[5, 10, 25, 50]" (page)="onPageChange($event)" aria-label="Sélectionner la page">
+  </mat-paginator>
+  }
+</div>

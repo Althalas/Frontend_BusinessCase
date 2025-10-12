@@ -1,0 +1,259 @@
+@use "@angular/material" as mat;
+@use "variables"; // Import our new Design System
+@use "animations"; // Import centralized animations
+
+@include mat.core();
+@include animations.global(); // Include global keyframes and animation classes
+
+// 1. Angular Material Palette Definition (Synced with our Variables)
+$eco-green-palette: (
+  50: #e8f5e9,
+  100: #c8e6c9,
+  200: #a5d6a7,
+  300: #81c784,
+  400: #66bb6a,
+  500: #4caf50,
+  600: #43a047,
+  700: #388e3c,
+  800: #2e7d32,
+  900: #1b5e20,
+  A100: #b9f6ca,
+  A200: #69f0ae,
+  A400: #00e676,
+  A700: #00c853,
+  contrast: (50: rgba(black, 0.87),
+    100: rgba(black, 0.87),
+    200: rgba(black, 0.87),
+    300: rgba(black, 0.87),
+    400: rgba(black, 0.87),
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+    A100: rgba(black, 0.87),
+    A200: rgba(black, 0.87),
+    A400: rgba(black, 0.87),
+    A700: white,
+  ),
+);
+
+$primary: mat.m2-define-palette($eco-green-palette, 500);
+$accent: mat.m2-define-palette($eco-green-palette, 500);
+$warn: mat.m2-define-palette(mat.$m2-red-palette);
+
+// Light Theme
+$theme: mat.m2-define-light-theme((color: (primary: $primary,
+        accent: $accent,
+        warn: $warn,
+      ),
+      typography: mat.m2-define-typography-config(),
+    ));
+
+// Dark Theme (Material)
+$dark-primary: mat.m2-define-palette($eco-green-palette, 500);
+$dark-accent: mat.m2-define-palette($eco-green-palette, 400); // Lighter for dark mode
+$dark-theme: mat.m2-define-dark-theme((color: (primary: $dark-primary,
+        accent: $dark-accent,
+        warn: $warn,
+      ),
+      typography: mat.m2-define-typography-config(),
+    ));
+
+// Apply Material Themes based on class presence
+@include mat.all-component-themes($theme);
+
+.dark-theme {
+  @include mat.all-component-colors($dark-theme);
+}
+
+// 2. Global Resets & Typography
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100vh;
+  margin: 0;
+  font-family: "Roboto", "Helvetica Neue", sans-serif;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+// 3. Global Utility Classes (Using Variables)
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.text-gradient {
+  background: linear-gradient(45deg, var(--color-brand-main), var(--color-brand-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+}
+
+// ============================================
+// 4. Material Design Overrides
+// Using CSS custom properties where possible to reduce !important usage
+// ============================================
+
+// Headings - need !important to override Material's inline styles
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-brand-dark);
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.dark-theme {
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--color-brand-light);
+  }
+}
+
+// Material Card - Using CSS custom properties
+.mat-mdc-card {
+  --mdc-elevated-card-container-color: var(--bg-card);
+  --mdc-elevated-card-container-shape: var(--radius-xl);
+  --mdc-outlined-card-container-color: var(--bg-card);
+  --mdc-outlined-card-outline-color: var(--border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+}
+
+// Material Buttons - Using CSS custom properties
+.mat-mdc-button,
+.mat-mdc-raised-button,
+.mat-mdc-outlined-button,
+.mat-mdc-flat-button {
+  --mdc-text-button-container-shape: var(--radius-md);
+  --mdc-filled-button-container-shape: var(--radius-md);
+  --mdc-outlined-button-container-shape: var(--radius-md);
+  --mdc-protected-button-container-shape: var(--radius-md);
+  border-radius: var(--radius-md);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+// Dialogs - Using CSS custom properties
+.mat-mdc-dialog-container,
+.mat-mdc-dialog-surface {
+  --mdc-dialog-container-color: var(--bg-card);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
+// Inputs
+.mat-mdc-form-field-outline {
+  background-color: var(--bg-input);
+}
+
+// Table - these need specificity due to Material's styling
+table.mat-mdc-table {
+  --mat-table-background-color: var(--bg-card);
+  --mat-table-header-headline-color: var(--text-secondary);
+  --mat-table-row-item-label-text-color: var(--text-primary);
+
+  th.mat-mdc-header-cell {
+    background-color: var(--bg-hover);
+    color: var(--text-secondary);
+  }
+
+  td.mat-mdc-cell {
+    color: var(--text-primary);
+    border-bottom-color: var(--border-light);
+  }
+}
+
+// Menu - Using CSS custom properties
+.mat-mdc-menu-panel {
+  --mat-menu-container-color: var(--bg-card);
+  --mat-menu-item-label-text-color: var(--text-primary);
+  background-color: var(--bg-card);
+
+  .mat-mdc-menu-item {
+    color: var(--text-primary);
+
+    &:hover {
+      background-color: var(--bg-hover);
+    }
+  }
+}
+
+// List items - for reviews and similar components
+.mat-mdc-list-item {
+  --mdc-list-list-item-label-text-color: var(--text-primary);
+  --mdc-list-list-item-supporting-text-color: var(--text-secondary);
+}
+
+// ============================================
+// 5. Global Toaster Styles (MatSnackBar)
+// ============================================
+.mat-mdc-snack-bar-container {
+  &.toast-success {
+    --mdc-snackbar-container-color: var(--color-success);
+    --mdc-snackbar-supporting-text-color: white;
+    --mat-snack-bar-button-color: white;
+
+    .mdc-snackbar__surface {
+      background-color: var(--color-success);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+    }
+  }
+
+  &.toast-error {
+    --mdc-snackbar-container-color: var(--color-error);
+    --mdc-snackbar-supporting-text-color: white;
+    --mat-snack-bar-button-color: white;
+
+    .mdc-snackbar__surface {
+      background-color: var(--color-error);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+    }
+  }
+
+  &.toast-info {
+    --mdc-snackbar-container-color: var(--color-brand-dark);
+    --mdc-snackbar-supporting-text-color: white;
+    --mat-snack-bar-button-color: var(--color-brand-main);
+
+    .mdc-snackbar__surface {
+      background-color: var(--color-brand-dark);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+    }
+  }
+
+  .mdc-snackbar__label {
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+}
+
+// ============================================
+// 6. Full-width utility class (global)
+// ============================================
+.full-width {
+  width: 100%;
+}

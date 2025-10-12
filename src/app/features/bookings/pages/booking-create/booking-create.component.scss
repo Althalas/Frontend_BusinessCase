@@ -1,0 +1,111 @@
+.booking-create-container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 60px;
+}
+
+.booking-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.station-summary {
+  background: linear-gradient(135deg, var(--color-brand-light) 0%, var(--color-brand-dark) 100%);
+  color: var(--text-inverse);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.station-summary mat-card-title,
+.station-summary mat-card-subtitle {
+  color: var(--text-inverse);
+}
+
+.station-specs {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.station-specs span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.station-specs .price {
+  color: #fff; // White text on gradient for contrast
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.station-specs mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.time-row {
+  display: flex;
+  gap: 16px;
+}
+
+.time-row mat-form-field {
+  flex: 1;
+}
+
+mat-divider {
+  margin: 20px 0;
+}
+
+.price-summary {
+  margin-bottom: 24px;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.price-row.total {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-brand-main);
+  border-top: 1px solid var(--border-light);
+  padding-top: 16px;
+  margin-top: 8px;
+}
+
+.submit-btn {
+  height: 48px;
+}
+
+mat-spinner {
+  display: inline-block;
+}

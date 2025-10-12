@@ -1,0 +1,193 @@
+// _mixins.scss
+// 👑 ULTRATHINK DESIGN SYSTEM - Mixins réutilisables
+
+@use "variables" as *;
+
+// ============================================
+// RESPONSIVE BREAKPOINTS
+// ============================================
+@mixin mobile {
+  @media (max-width: #{$breakpoint-sm}) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (max-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: #{$breakpoint-lg}) {
+    @content;
+  }
+}
+
+@mixin large-desktop {
+  @media (min-width: #{$breakpoint-xl}) {
+    @content;
+  }
+}
+
+// ============================================
+// FLEXBOX UTILITIES
+// ============================================
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-column($gap: 0) {
+  display: flex;
+  flex-direction: column;
+  @if $gap != 0 {
+    gap: $gap;
+  }
+}
+
+// ============================================
+// PAGE CONTAINERS
+// ============================================
+@mixin page-container($max-width: 1200px) {
+  max-width: $max-width;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+// ============================================
+// EMPTY STATE
+// ============================================
+@mixin empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-secondary);
+
+  mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: var(--text-muted);
+    opacity: 0.5;
+  }
+
+  h2 {
+    margin: 16px 0 8px;
+  }
+
+  p {
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+// ============================================
+// STATUS BADGES
+// ============================================
+@mixin status-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+@mixin status-available {
+  background-color: $green-50;
+  color: $green-800;
+}
+
+@mixin status-busy {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+@mixin status-offline {
+  background-color: $gray-200;
+  color: $gray-600;
+}
+
+@mixin status-pending {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+@mixin status-completed {
+  background-color: $green-50;
+  color: $green-800;
+}
+
+@mixin status-cancelled {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+// ============================================
+// ROLE BADGES
+// ============================================
+@mixin role-admin {
+  background-color: rgba(156, 39, 176, 0.1);
+  color: #9c27b0;
+}
+
+@mixin role-owner {
+  background-color: rgba(33, 150, 243, 0.1);
+  color: #2196f3;
+}
+
+@mixin role-client {
+  background-color: $green-50;
+  color: $green-700;
+}
+
+// ============================================
+// CARD STYLES
+// ============================================
+@mixin card-base {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+}
+
+// ============================================
+// ICON CONTAINER
+// ============================================
+@mixin icon-circle($size: 48px, $bg: var(--color-brand-main)) {
+  width: $size;
+  height: $size;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $bg;
+  color: white;
+}
+
+// ============================================
+// FULL WIDTH UTILITY
+// ============================================
+@mixin full-width {
+  width: 100%;
+}
+
+// ============================================
+// GLASS EFFECT
+// ============================================
+@mixin glass-effect {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: var(--glass-border);
+}
