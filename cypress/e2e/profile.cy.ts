@@ -31,10 +31,10 @@ describe("Profil Utilisateur", () => {
             cy.get("mat-card").should("be.visible");
             cy.contains("Informations Personnelles").should("be.visible");
 
-            // Verify email field is pre-filled and readonly
+            // Verify email field is pre-filled and disabled
             cy.get('input[formControlName="email"]')
                 .should("have.value", "test.verified@example.com")
-                .should("have.attr", "readonly");
+                .should("be.disabled");
 
             // Verify name fields are populated (values may differ per environment)
             cy.get('input[formControlName="firstName"]').should('not.have.value', '');
@@ -76,10 +76,10 @@ describe("Profil Utilisateur", () => {
             cy.login("test.verified@example.com", "TestPassword123!");
             cy.visit("/dashboard/profile");
 
-            // Email field should be readonly
-            cy.get('input[formControlName="email"]').should("have.attr", "readonly");
+            // Email field should be disabled
+            cy.get('input[formControlName="email"]').should("be.disabled");
 
-            // Should show hint about readonly email
+            // Should show hint about disabled email
             cy.contains("L'email ne peut pas être modifié").should("be.visible");
         });
     });
