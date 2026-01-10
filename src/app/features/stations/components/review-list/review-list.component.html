@@ -1,0 +1,73 @@
+<div class="reviews-container">
+  <h3>Avis des utilisateurs</h3>
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div >
+      <p>Chargement des avis...</p>
+    </div>
+  } @else {
+    <!-- Empty State -->
+    @if (reviews().length === 0) {
+      <div class="no-reviews">
+        <p>Aucun avis pour le moment. Soyez le premier à noter cette borne !</p>
+      </div>
+    }
+
+    <!-- Review List -->
+    <mat-list>
+      @for (review of reviews(); track review.id) {
+        <mat-list-item class="review-item">
+          <span matListItemTitle class="review-header">
+            <span class="user-name">
+              {{ review.user?.firstName }} {{ review.user?.lastName }}
+              @if (review.user?.roles?.includes('admin')) {
+              <span class="admin-badge">ADMIN</span>
+              }
+            </span>
+            <span class="review-date">{{
+              review.createdAt | date : "mediumDate"
+              }}</span>
+          </span>
+
+          <span matListItemLine class="stars-container">
+            @for (star of getStars(review.rating); track $index) {
+              <mat-icon class="star filled">star</mat-icon>
+            }
+            @for (star of getEmptyStars(review.rating); track $index) {
+              <mat-icon class="star empty">star_border</mat-icon>
+            }
+          </span>
+
+          <p matListItemLine class="review-comment">{{ review.comment }}</p>
+
+          <span matListItemMeta class="review-actions">
+            <!-- Edit (Owner only) -->
+            @if (review.user?.id === currentUserId()) {
+              <button mat-icon-button (click)="editReview(review)"
+                matTooltip="Modifier mon avis" aria-label="Modifier mon avis">
+                <mat-icon>edit</mat-icon>
+              </button>
+            }
+
+            <!-- Delete (Owner OR Admin) -->
+            @if (isAdmin() || review.user?.id === currentUserId()) {
+              <button mat-icon-button color="warn"
+                (click)="deleteReview(review)" matTooltip="Supprimer" aria-label="Supprimer cet avis" data-cy="review-delete-btn">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+
+            <!-- Flag (Others) -->
+            @if (review.user?.id !== currentUserId()) {
+              <button mat-icon-button (click)="openReport(review)"
+                matTooltip="Signaler cet avis" aria-label="Signaler cet avis">
+                <mat-icon>flag</mat-icon>
+              </button>
+            }
+          </span>
+        </mat-list-item>
+      }
+    </mat-list>
+  }
+</div>

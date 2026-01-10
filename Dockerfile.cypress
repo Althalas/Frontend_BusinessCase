@@ -1,0 +1,22 @@
+# Cypress E2E Test Runner
+FROM cypress/included:13.17.0
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies (excluding cypress as it's already included)
+RUN npm ci --legacy-peer-deps
+
+# Copy cypress config and tests (TypeScript with dedicated tsconfig)
+COPY cypress.config.ts ./
+COPY tsconfig.cypress.json ./
+COPY cypress/ ./cypress/
+
+# Set environment variables
+ENV CYPRESS_baseUrl=http://host.docker.internal:4200
+ENV CYPRESS_apiUrl=http://host.docker.internal:3000/api
+
+# Run tests
+ENTRYPOINT ["cypress", "run", "--browser", "chrome"]

@@ -1,0 +1,41 @@
+<h2 mat-dialog-title>{{ data.review ? 'Modifier votre avis' : 'Donner votre avis' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="reviewForm" class="review-form">
+    <div class="rating-container" (mouseleave)="hoverRating = 0">
+      <mat-label>Votre note</mat-label>
+      <div class="stars">
+        @for (star of stars; track star) {
+          <mat-icon class="star-icon"
+            [class.filled]="star <= (hoverRating || reviewForm.value.rating!)" (mouseenter)="hoverRating = star"
+            (click)="setRating(star)" [attr.data-cy]="'star-' + star">
+            star
+          </mat-icon>
+        }
+      </div>
+      @if (reviewForm.get('rating')?.touched && reviewForm.get('rating')?.invalid) {
+        <mat-error>
+          Une note est requise
+        </mat-error>
+      }
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Commentaire (optionnel)</mat-label>
+      <textarea matInput formControlName="comment" rows="4" placeholder="Partagez votre expérience..." data-cy="review-comment-textarea"></textarea>
+      <mat-hint align="end">{{reviewForm.value.comment?.length || 0}}/500</mat-hint>
+      @if (reviewForm.get('comment')?.hasError('maxlength')) {
+        <mat-error>
+          Maximum 500 caractères
+        </mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close data-cy="review-cancel-btn">Annuler</button>
+  <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="reviewForm.invalid" data-cy="review-submit-btn">
+    {{ data.review ? 'Enregistrer' : 'Publier' }}
+  </button>
+</mat-dialog-actions>

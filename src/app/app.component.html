@@ -1,0 +1,14 @@
+<div class="app-container">
+  @if (showLayout()) {
+  <app-navbar></app-navbar>
+  }
+
+  <main class="main-content" [class.with-layout]="showLayout()">
+    <router-outlet></router-outlet>
+  </main>
+
+  @if (showLayout()) {
+  <app-footer></app-footer>
+  }
+  <app-cookie-consent></app-cookie-consent>
+</div>

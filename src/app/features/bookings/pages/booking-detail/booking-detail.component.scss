@@ -1,0 +1,158 @@
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 60px;
+}
+
+.booking-detail-container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  margin: 0;
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.booking-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.info-card mat-card-avatar {
+  background: linear-gradient(135deg, var(--color-brand-main) 0%, var(--color-brand-dark) 100%);
+  color: var(--text-inverse);
+}
+
+.info-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.info-item {
+  display: flex;
+  gap: 12px;
+}
+
+.info-item mat-icon {
+  color: var(--color-brand-main);
+}
+
+.info-item strong {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.info-item p {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.info-item .price {
+  color: var(--color-brand-main);
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.timeline {
+  padding: 16px 0;
+  background: var(--bg-card);
+  border-radius: 16px;
+  margin-top: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.timeline-item {
+  display: flex;
+  gap: 16px;
+  padding: 16px 0;
+  border-left: 2px solid var(--border-light);
+  margin-left: 12px;
+  padding-left: 24px;
+  position: relative;
+}
+
+.timeline-item mat-icon {
+  position: absolute;
+  left: -13px;
+  background: var(--bg-card); // Mask the line
+  color: var(--input-border);
+}
+
+.timeline-item.completed mat-icon {
+  color: var(--color-success);
+}
+
+.timeline-item.active mat-icon {
+  color: var(--color-brand-main);
+}
+
+.timeline-item.cancelled mat-icon {
+  color: var(--color-error);
+}
+
+.timeline-item strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+
+.timeline-item p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.status-pending {
+  background-color: rgba(255, 152, 0, 0.15) !important;
+  color: var(--color-warning) !important;
+}
+
+.status-accepted {
+  background-color: rgba(76, 175, 80, 0.15) !important;
+  color: var(--color-success) !important;
+}
+
+.status-refused {
+  background-color: rgba(244, 67, 54, 0.15) !important;
+  color: var(--color-error) !important;
+}
+
+.status-completed {
+  background-color: rgba(27, 94, 32, 0.15) !important;
+  color: var(--color-brand-main) !important;
+}
+
+.status-cancelled {
+  background-color: rgba(183, 28, 28, 0.15) !important;
+  color: var(--color-error) !important;
+}
+
+@media (max-width: 600px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}

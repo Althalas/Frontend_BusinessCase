@@ -1,0 +1,101 @@
+<div class="my-stations-container">
+  <div class="page-header">
+    <h1>Mes bornes de recharge</h1>
+    <button mat-raised-button color="primary" routerLink="/stations/new">
+      <mat-icon>add</mat-icon>
+      Ajouter une borne
+    </button>
+  </div>
+
+  @if (isLoading()) {
+  <div class="loading-container">
+    <mat-spinner></mat-spinner>
+  </div>
+  } @else if (stations().length === 0) {
+  <mat-card class="empty-state">
+    <mat-card-content>
+      <mat-icon>ev_station</mat-icon>
+      @if (isAdmin()) {
+      <h2>Aucune borne disponible</h2>
+      <p>Les administrateurs ne peuvent pas créer de bornes.</p>
+      } @else {
+      <h2>Aucune borne enregistrée</h2>
+      <p>
+        Commencez à gagner de l'argent en partageant votre borne de recharge
+        avec d'autres utilisateurs.
+      </p>
+      <button mat-raised-button color="primary" routerLink="/stations/new">
+        <mat-icon>add</mat-icon>
+        Ajouter ma première borne
+      </button>
+      }
+    </mat-card-content>
+  </mat-card>
+  } @else {
+  <div class="stations-list">
+    @for (station of stations(); track station.id) {
+    <mat-card class="station-card">
+      <mat-card-content>
+        <div class="station-main">
+          <div class="station-image-placeholder">
+            <mat-icon>ev_station</mat-icon>
+          </div>
+
+          <div class="station-info">
+            <h3>{{ station.name }}</h3>
+            <p class="address">{{ getAddress(station) }}</p>
+            <div class="specs">
+              <mat-chip>{{ getPower(station) | number: '1.1-1' }} kW</mat-chip>
+            </div>
+            <p class="price">
+              {{ getPrice(station) | number: '1.2-2' }} €/h
+            </p>
+          </div>
+        </div>
+
+        <div class="station-actions">
+          <button mat-icon-button [matMenuTriggerFor]="menu" data-cy="station-menu-trigger">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item [routerLink]="['/stations', station.id]" data-cy="station-menu-view">
+              <mat-icon>visibility</mat-icon>
+              <span>Voir</span>
+            </button>
+            <button mat-menu-item [routerLink]="['/stations', station.id, 'edit']" data-cy="station-menu-edit">
+              <mat-icon>edit</mat-icon>
+              <span>Modifier</span>
+            </button>
+            <button mat-menu-item disabled>
+              <mat-icon>calendar_today</mat-icon>
+              <span>Disponibilités</span>
+            </button>
+            <button mat-menu-item disabled>
+              <mat-icon>bar_chart</mat-icon>
+              <span>Statistiques</span>
+            </button>
+            <button mat-menu-item class="delete-action" (click)="deleteStation(station)" aria-label="Supprimer" data-cy="station-menu-delete">
+              <mat-icon>delete</mat-icon>
+              <span>Supprimer</span>
+            </button>
+          </mat-menu>
+        </div>
+      </mat-card-content>
+
+      <mat-card-footer>
+        <div class="station-stats">
+          <div class="stat">
+            <span class="stat-value">{{ getBookingsCount(station) }}</span>
+            <span class="stat-label">Réservations</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">{{ getRevenue(station) | number: '1.0-0' }} €</span>
+            <span class="stat-label">Revenus</span>
+          </div>
+        </div>
+      </mat-card-footer>
+    </mat-card>
+    }
+  </div>
+  }
+</div>

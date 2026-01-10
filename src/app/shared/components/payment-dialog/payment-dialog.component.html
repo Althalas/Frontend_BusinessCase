@@ -1,0 +1,46 @@
+<h2 mat-dialog-title>Paiement Sécurisé Stripe</h2>
+<mat-dialog-content>
+  <!-- Loading State -->
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-container" style="display: flex; justify-content: center; padding: 20px;">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  }
+
+  <!-- Error Message -->
+  @if (errorMessage()) {
+    <div class="error-banner"
+      style="background-color: #ffebee; color: #c62828; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+      <mat-icon style="vertical-align: middle; margin-right: 5px;">error</mat-icon>
+      {{ errorMessage() }}
+    </div>
+  }
+
+  <!-- Stripe Element Container -->
+  <!-- [class.hidden] to hide while loading to prevent CLS -->
+  <div id="payment-element" [style.display]="isLoading() ? 'none' : 'block'">
+    <!-- Stripe Elements will be inserted here -->
+  </div>
+
+  <p class="amount-display" style="margin-top: 20px; text-align: right; font-size: 1.2em;">
+    Montant à régler : <strong>{{ data.amount | number : "1.2-2" }} €</strong>
+  </p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()" [disabled]="isProcessing()">Annuler</button>
+  <button mat-raised-button color="primary" [disabled]="isLoading() || isProcessing() || !isFormComplete()"
+    (click)="submit()">
+    @if (isProcessing()) {
+      <mat-spinner diameter="20"
+        style="display: inline-block; margin-right: 8px; vertical-align: middle;"></mat-spinner>
+    }
+    @if (!isProcessing()) {
+      <span>Payer {{ data.amount | number : "1.2-2" }} €</span>
+    }
+    @if (isProcessing()) {
+      <span>Traitement...</span>
+    }
+  </button>
+</mat-dialog-actions>

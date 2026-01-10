@@ -1,0 +1,17 @@
+
+@if (!accepted) {
+  <div class="cookie-banner" @slideIn>
+    <div class="cookie-content">
+      <mat-icon>cookie</mat-icon>
+      <p>
+        Nous utilisons le stockage local uniquement pour maintenir votre connexion
+        sécurisée et vos préférences d'affichage.
+      </p>
+    </div>
+    <div class="cookie-actions">
+      <button mat-raised-button color="primary" (click)="accept()">
+        C'est compris
+      </button>
+    </div>
+  </div>
+}

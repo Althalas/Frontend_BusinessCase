@@ -1,0 +1,200 @@
+<div class="booking-create-container">
+  <div class="page-header">
+    <button mat-icon-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1>Nouvelle réservation</h1>
+  </div>
+
+  @if (isLoadingStation()) {
+  <div class="loading-overlay">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+  } @else if (station()) {
+  <div class="booking-content">
+    <mat-card class="station-summary">
+      <mat-card-header>
+        <mat-card-title>{{ station()?.name }}</mat-card-title>
+        <mat-card-subtitle>{{ getAddress(station()!) }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="station-specs">
+          <span><mat-icon>power</mat-icon>
+            {{ getPower(station()!) | number : "1.1-1" }} kW</span>
+          <span class="price"><mat-icon>payments</mat-icon>
+            {{ getPrice(station()!) | number : "1.2-2" }} €/h</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="booking-form-card">
+      <mat-card-header>
+        <mat-card-title>Détails de la réservation</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="bookingForm" (ngSubmit)="onSubmit()">
+          <!-- Vehicle Selection -->
+          @if (userVehicles().length > 0) {
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Mon Véhicule (Auto-remplissage)</mat-label>
+            <mat-select formControlName="vehicleId" (selectionChange)="onVehicleSelect()">
+              <mat-option [value]="null">Aucun</mat-option>
+              @for (vehicle of userVehicles(); track vehicle.id) {
+              <mat-option [value]="vehicle.id">
+                {{ vehicle.brand }} {{ vehicle.model }} @if
+                (vehicle.batteryCapacity) { ({{
+                vehicle.batteryCapacity
+                }}
+                kWh) }
+              </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          }
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Date</mat-label>
+            <input matInput [matDatepicker]="picker" formControlName="date" [min]="minDate" data-cy="booking-date-input" />
+            <mat-datepicker-toggle matIconSuffix [for]="picker" data-cy="booking-datepicker-toggle"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+            @if (bookingForm.get('date')?.hasError('required')) {
+            <mat-error>La date est requise</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Busy Slots Info -->
+          @if (busySlots().length > 0) {
+          <div class="busy-slots-info" style="margin-bottom: 16px; margin-top: -8px">
+            <p style="
+                color: #d32f2f;
+                font-size: 0.9em;
+                margin-bottom: 8px;
+                font-weight: 500;
+              ">
+              <mat-icon style="
+                  font-size: 16px;
+                  height: 16px;
+                  width: 16px;
+                  vertical-align: text-bottom;
+                ">event_busy</mat-icon>
+              Créneaux déjà réservés :
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px">
+              @for (slot of busySlots(); track slot) {
+              <span style="
+                  background: #ffebee;
+                  color: #c62828;
+                  padding: 2px 8px;
+                  border-radius: 12px;
+                  font-size: 0.85em;
+                  border: 1px solid #ffcdd2;
+                ">
+                {{ isBusy(slot.startDatetime, slot.endDatetime) }}
+              </span>
+              }
+            </div>
+          </div>
+          }
+
+          <!-- Validation Errors -->
+          @if (overlapsBusySlot()) {
+          <div class="error-banner" style="
+              background: #ffebee;
+              color: #b71c1c;
+              padding: 12px;
+              border-radius: 4px;
+              margin-bottom: 16px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            ">
+            <mat-icon>error</mat-icon>
+            <span>Ce créneau est déjà réservé. Veuillez modifier l'heure.</span>
+          </div>
+          } @if (isInPast()) {
+          <div class="error-banner" style="
+              background: #ffebee;
+              color: #b71c1c;
+              padding: 12px;
+              border-radius: 4px;
+              margin-bottom: 16px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            ">
+            <mat-icon>history_toggle_off</mat-icon>
+            <span>Vous ne pouvez pas réserver dans le passé.</span>
+          </div>
+          } @if (isOutsideHours()) {
+          <div class="error-banner" style="
+              background: #ffebee;
+              color: #b71c1c;
+              padding: 12px;
+              border-radius: 4px;
+              margin-bottom: 16px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            ">
+            <mat-icon>schedule</mat-icon>
+            <span>Désolé, les bornes ne sont accessibles qu'entre 06h00 et 22h00.</span>
+          </div>
+          } @if (isDurationTooShort()) {
+          <div class="error-banner" style="
+              background: #ffebee;
+              color: #b71c1c;
+              padding: 12px;
+              border-radius: 4px;
+              margin-bottom: 16px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            ">
+            <mat-icon>hourglass_bottom</mat-icon>
+            <span>La durée minimale est de 30 minutes.</span>
+          </div>
+          }
+
+          <div class="time-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Heure de début</mat-label>
+              <input matInput type="time" formControlName="startTime" data-cy="booking-starttime-input" />
+              @if (bookingForm.get('startTime')?.hasError('required')) {
+              <mat-error>Requis</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Heure de fin</mat-label>
+              <input matInput type="time" formControlName="endTime" data-cy="booking-endtime-input" />
+              @if (bookingForm.get('endTime')?.hasError('required')) {
+              <mat-error>Requis</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <div class="price-summary">
+            <div class="price-row">
+              <span>Durée estimée</span>
+              <span>{{ calculateDuration() }} min</span>
+            </div>
+            <div class="price-row total">
+              <span>Total estimé</span>
+              <span>{{ calculateTotal() | number : "1.2-2" }} €</span>
+            </div>
+          </div>
+
+          <button mat-raised-button color="primary" type="submit" class="full-width submit-btn"
+            [disabled]="bookingForm.invalid || !station() || isSubmitting() || overlapsBusySlot() || isInPast() || isDurationTooShort() || isOutsideHours()" data-cy="booking-submit-btn">
+            @if (isSubmitting()) {
+            <mat-spinner diameter="20"></mat-spinner>
+            } @else { Confirmer la réservation }
+          </button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+  }
+</div>

@@ -1,0 +1,41 @@
+.review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px;
+  min-width: 350px;
+}
+
+.rating-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  label {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+}
+
+.stars {
+  display: flex;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.star-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  color: var(--border-medium);
+  transition: color 0.2s, transform 0.1s;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+.star-icon.filled {
+  color: var(--color-warning);
+}

@@ -1,0 +1,473 @@
+<div class="dashboard-container">
+  <!-- WELCOME BANNER -->
+  <div class="dashboard-header-banner">
+    <div class="banner-content">
+      <h1>Administration</h1>
+      <p>Vue d'ensemble et gestion de la plateforme.</p>
+    </div>
+    <div class="banner-actions">
+      <!-- Actions can be added here if needed -->
+    </div>
+  </div>
+
+  <!-- STATS GRID -->
+  <div class="stats-overview-grid">
+    <mat-card class="stat-card">
+      <div class="stat-icon-box">
+        <mat-icon>people</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats().totalUsers }}</div>
+        <div class="stat-label">Utilisateurs</div>
+      </div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-icon-box">
+        <mat-icon>ev_station</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats().totalStations }}</div>
+        <div class="stat-label">Bornes</div>
+      </div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-icon-box">
+        <mat-icon>calendar_today</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats().totalReservations }}</div>
+        <div class="stat-label">Réservations</div>
+      </div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-icon-box">
+        <mat-icon>pending_actions</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats().pendingReservations }}</div>
+        <div class="stat-label">En attente</div>
+      </div>
+    </mat-card>
+  </div>
+
+  <div class="admin-content-card">
+    <mat-tab-group animationDuration="300ms" class="dashboard-tabs" mat-stretch-tabs="false" mat-align-tabs="start">
+      <!-- Users Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <div class="custom-tab-label">
+            <mat-icon class="tab-icon">group</mat-icon>
+            <span>Utilisateurs ({{ totalUsers() }})</span>
+          </div>
+        </ng-template>
+
+        <div class="tab-content fadeIn">
+          <!-- SEARCH FILTER -->
+          <div class="filter-container" style="padding: 16px; display: flex; align-items: center; gap: 16px;">
+            <mat-form-field appearance="outline" style="flex: 1; max-width: 400px; font-size: 14px;">
+              <mat-label>Rechercher un utilisateur</mat-label>
+              <input matInput [formControl]="usersSearchControl" placeholder="Nom, Email..." />
+              <mat-icon matSuffix>search</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <div class="table-container">
+            <table mat-table [dataSource]="users()" class="full-width-table">
+              <ng-container matColumnDef="id">
+                <th mat-header-cell *matHeaderCellDef>ID</th>
+                <td mat-cell *matCellDef="let user">#{{ user.id }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Nom</th>
+                <td mat-cell *matCellDef="let user" class="bold-cell">
+                  {{ user.firstName }} {{ user.lastName }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="email">
+                <th mat-header-cell *matHeaderCellDef>Email</th>
+                <td mat-cell *matCellDef="let user">{{ user.email }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="role">
+                <th mat-header-cell *matHeaderCellDef>Rôle</th>
+                <td mat-cell *matCellDef="let user">
+                  @for (role of user.roles; track role) {
+                  <span class="role-badge" [class]="'role-' + role" style="margin-right: 4px">{{ role }}</span>
+                  }
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Statut</th>
+                <td mat-cell *matCellDef="let user">
+                  <span class="status-badge" [class]="user.isValidated ? 'validated' : 'pending'">
+                    {{ user.isValidated ? "Validé" : "En attente" }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="active">
+                <th mat-header-cell *matHeaderCellDef>Compte</th>
+                <td mat-cell *matCellDef="let user">
+                  <mat-chip [color]="user.isActive ? 'primary' : 'warn'" selected class="small-chip">
+                    {{ user.isActive ? "Actif" : "Bloqué" }}
+                  </mat-chip>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let user">
+                  <button mat-stroked-button [color]="user.isActive ? 'warn' : 'primary'"
+                    [disabled]="isCurrentUser(user) || hasAdminRole(user)" [matTooltip]="
+                      isCurrentUser(user)
+                        ? 'Action impossible sur votre compte'
+                        : ''
+                    " (click)="toggleStatus(user)" class="small-btn">
+                    {{ user.isActive ? "Bannir" : "Réactiver" }}
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedUserColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedUserColumns" class="table-row"></tr>
+            </table>
+
+            <!-- PAGINATOR -->
+            <mat-paginator [length]="totalUsers()" [pageSize]="usersPageSize()" [pageSizeOptions]="[5, 10, 20]"
+              (page)="onUsersPageChange($event)" showFirstLastButtons aria-label="Sélectionner la page">
+            </mat-paginator>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Stations Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <div class="custom-tab-label">
+            <mat-icon class="tab-icon">ev_station</mat-icon>
+            <span>Bornes ({{ totalStations() }})</span>
+          </div>
+        </ng-template>
+        <div class="tab-content fadeIn">
+          <!-- SEARCH FILTER STATIONS -->
+          <div class="filter-container" style="padding: 16px; display: flex; align-items: center; gap: 16px;">
+            <mat-form-field appearance="outline" style="flex: 1; max-width: 400px; font-size: 14px;">
+              <mat-label>Rechercher une borne</mat-label>
+              <input matInput [formControl]="stationsSearchControl" placeholder="Nom, Ville..." />
+              <mat-icon matSuffix>search</mat-icon>
+            </mat-form-field>
+          </div>
+          <div class="table-container">
+            <table mat-table [dataSource]="stations()" class="full-width-table">
+              <ng-container matColumnDef="id">
+                <th mat-header-cell *matHeaderCellDef>ID</th>
+                <td mat-cell *matCellDef="let station">#{{ station.id }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Nom</th>
+                <td mat-cell *matCellDef="let station" class="bold-cell">
+                  {{ station.name }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="city">
+                <th mat-header-cell *matHeaderCellDef>Ville</th>
+                <td mat-cell *matCellDef="let station">{{ station.city }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="power">
+                <th mat-header-cell *matHeaderCellDef>Puissance</th>
+                <td mat-cell *matCellDef="let station">
+                  {{ station.powerKw }} kW
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="owner">
+                <th mat-header-cell *matHeaderCellDef>Propriétaire</th>
+                <td mat-cell *matCellDef="let station">
+                  {{ station.location.user.firstName }}
+                  {{ station.location.user.lastName }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Statut</th>
+                <td mat-cell *matCellDef="let station">
+                  <mat-chip [color]="
+                      station.deletedAt
+                        ? 'warn'
+                        : station.isActive
+                        ? 'primary'
+                        : 'accent'
+                    " selected class="small-chip">
+                    {{
+                    station.deletedAt
+                    ? "Supprimée"
+                    : station.isActive
+                    ? "Active"
+                    : "Inactive"
+                    }}
+                  </mat-chip>
+                  @if (station.deletedAt && station.deletionReason) {
+                  <mat-icon class="info-icon" [matTooltip]="getDeletionTooltip(station)">info</mat-icon>
+                  }
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let station">
+                  <button mat-icon-button color="warn" [disabled]="!station.isActive || station.deletedAt"
+                    (click)="deactivateStation(station)" matTooltip="Désactiver la borne">
+                    <mat-icon>power_off</mat-icon>
+                  </button>
+                  <button mat-icon-button color="primary" [disabled]="station.isActive || station.deletedAt"
+                    (click)="reactivateStation(station)" matTooltip="Réactiver la borne">
+                    <mat-icon>power</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" [disabled]="station.deletedAt" (click)="deleteStation(station)"
+                    matTooltip="Supprimer la borne">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedStationColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedStationColumns" class="table-row"></tr>
+            </table>
+
+            <!-- PAGINATOR STATIONS -->
+            <mat-paginator [length]="totalStations()" [pageSize]="stationsPageSize()" [pageSizeOptions]="[5, 10, 20]"
+              (page)="onStationsPageChange($event)" showFirstLastButtons aria-label="Sélectionner la page">
+            </mat-paginator>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Reports Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <div class="custom-tab-label">
+            <mat-icon class="tab-icon">report_problem</mat-icon>
+            <span>Signalements ({{ reports().length }})</span>
+          </div>
+        </ng-template>
+        <div class="tab-content fadeIn">
+          <div class="table-container">
+            <table mat-table [dataSource]="reports()" class="full-width-table">
+              <ng-container matColumnDef="id">
+                <th mat-header-cell *matHeaderCellDef>ID</th>
+                <td mat-cell *matCellDef="let report">#{{ report.id }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="reason">
+                <th mat-header-cell *matHeaderCellDef>Motif</th>
+                <td mat-cell *matCellDef="let report">
+                  <mat-chip color="warn" selected class="small-chip">{{
+                    report.reason
+                    }}</mat-chip>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="description">
+                <th mat-header-cell *matHeaderCellDef>Description</th>
+                <td mat-cell *matCellDef="let report" [matTooltip]="report.description">
+                  <span class="truncate-text">{{
+                    report.description || "-"
+                    }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="reporter">
+                <th mat-header-cell *matHeaderCellDef>Signalé par</th>
+                <td mat-cell *matCellDef="let report">
+                  {{ report.reporter?.firstName }}
+                  {{ report.reporter?.lastName }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="target">
+                <th mat-header-cell *matHeaderCellDef>Cible</th>
+                <td mat-cell *matCellDef="let report">
+                  @if (report.targetStation) {
+                  <span>Borne #{{ report.targetStation.id }}</span>
+                  } @else if (report.targetReview) {
+                  <span>Avis #{{ report.targetReview.id }}</span>
+                  }
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Statut</th>
+                <td mat-cell *matCellDef="let report">
+                  <mat-chip [color]="
+                      report.status === 'RESOLVED'
+                        ? 'primary'
+                        : report.status === 'DISMISSED'
+                        ? 'accent'
+                        : 'warn'
+                    " selected class="small-chip">
+                    {{ report.status }}
+                  </mat-chip>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="date">
+                <th mat-header-cell *matHeaderCellDef>Date</th>
+                <td mat-cell *matCellDef="let report">
+                  {{ report.createdAt | date : "dd/MM/yyyy" }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let report">
+                  @if (report.status === 'PENDING') {
+                  <button mat-icon-button color="primary" (click)="updateReportStatus(report, 'RESOLVED')"
+                    matTooltip="Résoudre">
+                    <mat-icon>check</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" (click)="updateReportStatus(report, 'DISMISSED')"
+                    matTooltip="Rejeter">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                  }
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedReportColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedReportColumns" class="table-row"></tr>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Reservations Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <div class="custom-tab-label">
+            <mat-icon class="tab-icon">event_note</mat-icon>
+            <span>Réservations ({{ totalReservations() }})</span>
+          </div>
+        </ng-template>
+        <div class="tab-content fadeIn">
+          <!-- SEARCH FILTER RESERVATIONS -->
+          <div class="filter-container" style="padding: 16px; display: flex; align-items: center; gap: 16px;">
+            <mat-form-field appearance="outline" style="flex: 1; max-width: 400px; font-size: 14px;">
+              <mat-label>Rechercher une réservation</mat-label>
+              <input matInput [formControl]="reservationsSearchControl" placeholder="Client, Borne..." />
+              <mat-icon matSuffix>search</mat-icon>
+            </mat-form-field>
+          </div>
+          <div class="table-container">
+            <table mat-table [dataSource]="reservations()" class="full-width-table">
+              <ng-container matColumnDef="id">
+                <th mat-header-cell *matHeaderCellDef>ID</th>
+                <td mat-cell *matCellDef="let reservation">
+                  #{{ reservation.id }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="station">
+                <th mat-header-cell *matHeaderCellDef>Borne</th>
+                <td mat-cell *matCellDef="let reservation">
+                  <div class="station-cell-info">
+                    <span class="name">{{
+                      reservation.chargingStation.name
+                      }}</span>
+                    <span class="city">{{
+                      reservation.chargingStation.city
+                      }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="renter">
+                <th mat-header-cell *matHeaderCellDef>Client</th>
+                <td mat-cell *matCellDef="let reservation">
+                  {{ reservation.renter.firstName }}
+                  {{ reservation.renter.lastName }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="dates">
+                <th mat-header-cell *matHeaderCellDef>Dates</th>
+                <td mat-cell *matCellDef="let reservation">
+                  <div class="date-cell">
+                    <span>{{
+                      reservation.startDatetime | date : "dd MMM"
+                      }}</span>
+                    <span class="time">{{ reservation.startDatetime | date : "HH:mm" }} -
+                      {{ reservation.endDatetime | date : "HH:mm" }}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="amount">
+                <th mat-header-cell *matHeaderCellDef>Montant</th>
+                <td mat-cell *matCellDef="let reservation" class="price-cell">
+                  {{ reservation.totalAmount | number : "1.2-2" }}€
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Statut</th>
+                <td mat-cell *matCellDef="let reservation">
+                  <span class="status-badge" [class]="'status-' + reservation.status">
+                    {{ reservation.status }}
+                  </span>
+                  @if (reservation.status === 'cancelled' &&
+                  reservation.cancellationReason) {
+                  <mat-icon class="info-icon" [matTooltip]="getCancellationTooltip(reservation)">info</mat-icon>
+                  } @if (reservation.status === 'refused' &&
+                  reservation.cancellationReason) {
+                  <mat-icon class="info-icon" [matTooltip]="getRefusalTooltip(reservation)">info</mat-icon>
+                  }
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let reservation">
+                  <button mat-icon-button color="accent" (click)="viewReservationDetails(reservation)"
+                    matTooltip="Voir les détails">
+                    <mat-icon>visibility</mat-icon>
+                  </button>
+                  @if (reservation.status === 'pending') {
+                  <button mat-icon-button class="accept-btn" (click)="approveReservation(reservation)"
+                    matTooltip="Approuver">
+                    <mat-icon>check_circle</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" (click)="rejectReservation(reservation)" matTooltip="Rejeter">
+                    <mat-icon>cancel</mat-icon>
+                  </button>
+                  } @if (reservation.status === 'completed') {
+                  <button mat-icon-button color="primary" (click)="downloadReceipt(reservation.id)" matTooltip="Reçu">
+                    <mat-icon>receipt</mat-icon>
+                  </button>
+                  }
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedReservationColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedReservationColumns" class="table-row"></tr>
+            </table>
+
+            <!-- PAGINATOR RESERVATIONS -->
+            <mat-paginator [length]="totalReservations()" [pageSize]="reservationsPageSize()"
+              [pageSizeOptions]="[5, 10, 20]" (page)="onReservationsPageChange($event)" showFirstLastButtons
+              aria-label="Sélectionner la page">
+            </mat-paginator>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>

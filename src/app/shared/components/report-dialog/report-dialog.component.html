@@ -1,0 +1,49 @@
+
+<h2 mat-dialog-title>
+  Signaler {{ data.type === "station" ? "cette borne" : "cet avis" }}
+</h2>
+<mat-dialog-content>
+  <form [formGroup]="reportForm">
+    @if (data.targetName) {
+      <p>
+        Concerne : <strong>{{ data.targetName }}</strong>
+      </p>
+    }
+
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Motif</mat-label>
+      <mat-select formControlName="reason">
+        <mat-option value="INAPPROPRIATE_CONTENT">Contenu inapproprié</mat-option>
+        @if (data.type === 'station') {
+          <mat-option value="BROKEN_STATION">Borne hors service / dégradée</mat-option>
+        }
+        <mat-option value="INCORRECT_INFO">Informations incorrectes</mat-option>
+        <mat-option value="OTHER">Autre</mat-option>
+      </mat-select>
+      @if (reportForm.get('reason')?.hasError('required')) {
+        <mat-error>Requis</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Description détaillée</mat-label>
+      <textarea
+        matInput
+        formControlName="description"
+        rows="4"
+        placeholder="Expliquez le problème..."
+      ></textarea>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Annuler</button>
+  <button
+    mat-raised-button
+    color="warn"
+    [disabled]="reportForm.invalid"
+    (click)="submit()"
+  >
+    Signaler
+  </button>
+</mat-dialog-actions>
