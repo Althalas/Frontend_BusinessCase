@@ -95,14 +95,31 @@ export class BookingCreateComponent {
     return d;
   })();
 
+  /** Validateur : endTime doit être > startTime. */
+  private timeRangeValidator(group: FormGroup): { [key: string]: boolean } | null {
+    const startTime = group.get("startTime")?.value;
+    const endTime = group.get("endTime")?.value;
+    if (!startTime || !endTime) return null;
+
+    const [startH, startM] = startTime.split(":").map(Number);
+    const [endH, endM] = endTime.split(":").map(Number);
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+
+    if (endMinutes <= startMinutes) {
+      return { invalidTimeRange: true };
+    }
+    return null;
+  }
+
   // --- FORM ---
 
   bookingForm: FormGroup = this.fb.group({
     date: [null, [Validators.required]],
-    startTime: ["", [Validators.required]],
-    endTime: ["", [Validators.required]],
+    startTime: ["", [Validators.required, Validators.pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)]],
+    endTime: ["", [Validators.required, Validators.pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)]],
     vehicleId: [null],
-  });
+  }, { validators: this.timeRangeValidator });
 
   // --- ROUTE & SIGNALS ---
 

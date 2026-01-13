@@ -3,6 +3,28 @@ import { HttpClient } from "@angular/common/http";
 import { Observable } from "rxjs";
 import { environment } from "@env/environment";
 
+/** Informations utilisateur dans un signalement. */
+export interface ReportUser {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+/** Informations station dans un signalement. */
+export interface ReportStation {
+  id: number;
+  name: string;
+  city?: string;
+}
+
+/** Informations avis dans un signalement. */
+export interface ReportReview {
+  id: number;
+  rating?: number;
+  comment?: string;
+}
+
 export interface Report {
   id: number;
   reporterId: number;
@@ -17,9 +39,9 @@ export interface Report {
   status: "PENDING" | "RESOLVED" | "DISMISSED";
   createdAt: string;
   updatedAt: string;
-  reporter?: any; // User
-  targetStation?: any;
-  targetReview?: any;
+  reporter?: ReportUser;
+  targetStation?: ReportStation;
+  targetReview?: ReportReview;
 }
 
 /**

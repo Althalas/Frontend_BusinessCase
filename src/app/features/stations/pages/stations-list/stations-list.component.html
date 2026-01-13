@@ -47,13 +47,8 @@
           Compatible véhicules
         </mat-slide-toggle>
 
-        <!-- Bouton Apply Backend Filters si besoin, sinon Reset suffit -->
-        <button mat-raised-button color="primary" type="button" (click)="applyBackendFilters()" data-cy="stations-filter-btn">
-          <mat-icon>filter_list</mat-icon>
-          Filtrer
-        </button>
-
         <button mat-button type="button" (click)="resetFilters()" data-cy="stations-reset-btn">
+          <mat-icon>refresh</mat-icon>
           Réinitialiser
         </button>
       </form>

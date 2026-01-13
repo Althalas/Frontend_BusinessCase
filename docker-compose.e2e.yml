@@ -24,7 +24,7 @@ services:
   # Backend API (NestJS) with DB setup
   backend:
     build:
-      context: ./Backend_BusinessCase
+      context: ../Backend_BusinessCase
       dockerfile: Dockerfile
     container_name: electricity_backend_e2e
     ports:
@@ -67,7 +67,7 @@ services:
   # Frontend (Angular)
   frontend:
     build:
-      context: ./Frontend_BusinessCase
+      context: .
       dockerfile: Dockerfile.dev
     container_name: electricity_frontend_e2e
     ports:
@@ -87,7 +87,7 @@ services:
       retries: 15
       start_period: 90s
     volumes:
-      - ./Frontend_BusinessCase:/app
+      - .:/app
       - /app/node_modules
 
   cypress:
@@ -102,7 +102,7 @@ services:
       - CYPRESS_baseUrl=http://frontend:4200
       - CYPRESS_apiUrl=http://backend:3000/api
     volumes:
-      - ./Frontend_BusinessCase:/e2e
+      - .:/e2e
     working_dir: /e2e
     # Entrypoint of the image usually handles "cypress run", we just need to ensure arguments
     command: [ "--browser", "electron" ]

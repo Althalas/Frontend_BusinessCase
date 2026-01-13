@@ -134,6 +134,34 @@
 }
 
 // ============================================
+// RESERVATION STATUS BADGES (for mat-chip)
+// ============================================
+@mixin reservation-status-pending {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: var(--color-warning);
+}
+
+@mixin reservation-status-accepted {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--color-info);
+}
+
+@mixin reservation-status-refused {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-error);
+}
+
+@mixin reservation-status-completed {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+}
+
+@mixin reservation-status-cancelled {
+  background-color: rgba(183, 28, 28, 0.15);
+  color: var(--color-error);
+}
+
+// ============================================
 // ROLE BADGES
 // ============================================
 @mixin role-admin {

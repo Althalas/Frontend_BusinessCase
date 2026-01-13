@@ -114,23 +114,41 @@
               <ng-container matColumnDef="active">
                 <th mat-header-cell *matHeaderCellDef>Compte</th>
                 <td mat-cell *matCellDef="let user">
-                  <mat-chip [color]="user.isActive ? 'primary' : 'warn'" selected class="small-chip">
-                    {{ user.isActive ? "Actif" : "Bloqué" }}
-                  </mat-chip>
+                  @if (user.deletedAt) {
+                    <mat-chip color="warn" selected class="small-chip">Supprimé</mat-chip>
+                  } @else {
+                    <mat-chip [color]="user.isActive ? 'primary' : 'warn'" selected class="small-chip">
+                      {{ user.isActive ? "Actif" : "Bloqué" }}
+                    </mat-chip>
+                  }
                 </td>
               </ng-container>
 
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef>Actions</th>
                 <td mat-cell *matCellDef="let user">
-                  <button mat-stroked-button [color]="user.isActive ? 'warn' : 'primary'"
-                    [disabled]="isCurrentUser(user) || hasAdminRole(user)" [matTooltip]="
-                      isCurrentUser(user)
-                        ? 'Action impossible sur votre compte'
-                        : ''
-                    " (click)="toggleStatus(user)" class="small-btn">
-                    {{ user.isActive ? "Bannir" : "Réactiver" }}
-                  </button>
+                  @if (user.deletedAt) {
+                    <!-- Utilisateur supprimé : bouton restaurer -->
+                    <button mat-icon-button color="primary"
+                      (click)="restoreUser(user)"
+                      matTooltip="Restaurer l'utilisateur">
+                      <mat-icon>restore</mat-icon>
+                    </button>
+                  } @else {
+                    <!-- Utilisateur actif : boutons bannir/débannir et supprimer -->
+                    <button mat-icon-button [color]="user.isActive ? 'warn' : 'primary'"
+                      [disabled]="isCurrentUser(user) || hasAdminRole(user)"
+                      [matTooltip]="isCurrentUser(user) ? 'Action impossible sur votre compte' : (user.isActive ? 'Bannir' : 'Réactiver')"
+                      (click)="toggleStatus(user)">
+                      <mat-icon>{{ user.isActive ? 'block' : 'check_circle' }}</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn"
+                      [disabled]="isCurrentUser(user) || hasAdminRole(user)"
+                      [matTooltip]="isCurrentUser(user) ? 'Action impossible sur votre compte' : 'Supprimer'"
+                      (click)="deleteUser(user)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  }
                 </td>
               </ng-container>
 
@@ -224,13 +242,15 @@
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef>Actions</th>
                 <td mat-cell *matCellDef="let station">
+                  @if (!station.isActive && !station.deletedAt) {
+                    <button mat-icon-button class="accept-btn"
+                      (click)="reactivateStation(station)" matTooltip="Activer la borne">
+                      <mat-icon>power</mat-icon>
+                    </button>
+                  }
                   <button mat-icon-button color="warn" [disabled]="!station.isActive || station.deletedAt"
                     (click)="deactivateStation(station)" matTooltip="Désactiver la borne">
                     <mat-icon>power_off</mat-icon>
-                  </button>
-                  <button mat-icon-button color="primary" [disabled]="station.isActive || station.deletedAt"
-                    (click)="reactivateStation(station)" matTooltip="Réactiver la borne">
-                    <mat-icon>power</mat-icon>
                   </button>
                   <button mat-icon-button color="warn" [disabled]="station.deletedAt" (click)="deleteStation(station)"
                     matTooltip="Supprimer la borne">

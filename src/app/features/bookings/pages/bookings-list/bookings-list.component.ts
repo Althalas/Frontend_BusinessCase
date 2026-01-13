@@ -1,4 +1,5 @@
-import { Component, inject, signal, computed, ChangeDetectionStrategy, effect } from "@angular/core";
+import { Component, inject, signal, computed, ChangeDetectionStrategy, effect, DestroyRef } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
 import { RouterLink } from "@angular/router";
 import { MatCardModule } from "@angular/material/card";
@@ -46,6 +47,7 @@ export class BookingsListComponent {
   private bookingsService = inject(BookingsService);
   private toastService = inject(ToastService);
   private dialog = inject(MatDialog);
+  private destroyRef = inject(DestroyRef);
 
   // --- DÉCLENCHEURS ---
   /** Signal de rafraîchissement manuel. */
@@ -199,7 +201,7 @@ export class BookingsListComponent {
       }
     });
 
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((confirmed) => {
       if (confirmed) {
         this.cancelBookingMutation.mutate(id);
       }

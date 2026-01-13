@@ -1,5 +1,5 @@
-import { Component, inject, computed, ChangeDetectionStrategy, effect } from "@angular/core";
-import { toSignal, rxResource } from "@angular/core/rxjs-interop";
+import { Component, inject, computed, ChangeDetectionStrategy, effect, DestroyRef } from "@angular/core";
+import { toSignal, rxResource, takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { MatCardModule } from "@angular/material/card";
@@ -49,6 +49,7 @@ export class BookingDetailComponent {
   private readonly bookingsService = inject(BookingsService);
   private readonly toastService = inject(ToastService);
   private readonly dialog = inject(MatDialog);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Note : Utilisation de rxResource.reload() au lieu de refreshTrigger pour des mises à jour plus fiables
 
@@ -185,7 +186,7 @@ export class BookingDetailComponent {
       }
     });
 
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((confirmed) => {
       if (confirmed) {
         this.cancelMutation.mutate(booking.id);
       }
@@ -205,12 +206,9 @@ export class BookingDetailComponent {
       data: { amount: booking.totalPrice, bookingId: booking.id },
     });
 
-    // L'abonnement au Dialog est acceptable - c'est un flux d'événements
-    dialogRef.afterClosed().subscribe((result: any) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result: any) => {
       if (result) {
-        // Rafraîchir immédiatement pour montrer l'état mis à jour (Succès paiement Stripe)
         this.bookingResource.reload();
-        // Confirmer également le paiement en backend (met à jour le statut à 'accepted')
         this.payMutation.mutate(booking.id);
       }
     });

@@ -1,5 +1,5 @@
-import { Component, input, computed, inject, signal, ChangeDetectionStrategy } from "@angular/core";
-import { rxResource } from "@angular/core/rxjs-interop";
+import { Component, input, computed, inject, signal, ChangeDetectionStrategy, DestroyRef } from "@angular/core";
+import { rxResource, takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
 import { MatListModule } from "@angular/material/list";
 import { MatIconModule } from "@angular/material/icon";
@@ -51,6 +51,7 @@ export class ReviewListComponent {
   private dialog = inject(MatDialog);
   private authService = inject(AuthService);
   private toastService = inject(ToastService);
+  private destroyRef = inject(DestroyRef);
 
   readonly currentUserId = computed(() => this.authService.currentUser()?.id);
 
@@ -91,7 +92,7 @@ export class ReviewListComponent {
       },
     });
 
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
       if (result) {
         this.reportsService
           .createReport({
@@ -99,6 +100,7 @@ export class ReviewListComponent {
             reason: result.reason,
             description: result.description,
           })
+          .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: () => this.toastService.success("Signalement envoyé"),
             error: (err) => this.toastService.error(err.error?.message || "Erreur lors du signalement"),
@@ -119,9 +121,11 @@ export class ReviewListComponent {
       }
     });
 
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((confirmed) => {
       if (confirmed) {
-        this.reviewsService.delete(review.id).subscribe({
+        this.reviewsService.delete(review.id).pipe(
+          takeUntilDestroyed(this.destroyRef)
+        ).subscribe({
           next: () => {
             this.internalRefresh.update(n => n + 1);
             this.toastService.success("Avis supprimé");
@@ -141,7 +145,7 @@ export class ReviewListComponent {
       }
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(result => {
       if (result) {
         this.internalRefresh.update(n => n + 1);
       }

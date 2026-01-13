@@ -54,10 +54,7 @@ export class AddressService {
           postcode: feature.properties.postcode,
         }))
       ),
-      catchError((err) => {
-        console.error('Erreur API Adresse:', err);
-        return of([]);
-      })
+      catchError(() => of([]))
     );
   }
 }

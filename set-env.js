@@ -55,7 +55,9 @@ fs.writeFile(targetPath, getEnvConfigFile('dev'), function (err) {
 });
 
 // Generate environment.prod.ts
-fs.writeFile(targetPathProd, getEnvConfigFile('prod'), function (err) {
+const prodConfig = getEnvConfigFile('prod');
+console.log(colors.green, `[DEBUG] NG_APP_API_URL_PROD = ${process.env.NG_APP_API_URL_PROD || '(not set - using localhost fallback)'}`);
+fs.writeFile(targetPathProd, prodConfig, function (err) {
    if (err) {
        throw console.error(err);
    } else {

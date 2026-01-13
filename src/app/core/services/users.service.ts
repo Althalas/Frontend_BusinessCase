@@ -41,15 +41,24 @@ export class UsersService {
    * Conformité RGPD (GDPR).
    * @returns Observable contenant l'objet JSON complet des données.
    */
-  exportData(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/me/export`);
+  exportData(): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/me/export`);
   }
 
   /**
    * Change le mot de passe de l'utilisateur.
    * @param dto Objet contenant l'ancien et le nouveau mot de passe.
    */
-  changePassword(dto: { currentPassword: string; newPassword: string }): Observable<any> {
-    return this.http.post(`${this.apiUrl}/me/password`, dto);
+  changePassword(dto: { currentPassword: string; newPassword: string }): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/me/password`, dto);
+  }
+
+  /**
+   * Supprime définitivement le compte de l'utilisateur (RGPD Article 17).
+   * Les données personnelles sont anonymisées.
+   * @returns Observable avec confirmation de suppression.
+   */
+  deleteAccount(): Observable<{ message: string; deletedAt: string }> {
+    return this.http.delete<{ message: string; deletedAt: string }>(`${this.apiUrl}/me`);
   }
 }

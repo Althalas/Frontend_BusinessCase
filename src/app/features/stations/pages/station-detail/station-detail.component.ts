@@ -1,7 +1,7 @@
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, inject, signal, DestroyRef } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
-import { rxResource, toSignal } from "@angular/core/rxjs-interop";
+import { rxResource, toSignal, takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatCardModule } from "@angular/material/card";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -80,6 +80,7 @@ export class StationDetailComponent {
   private readonly dialog = inject(MatDialog);
   private readonly toastService = inject(ToastService);
   private readonly reportsService = inject(ReportsService);
+  private readonly destroyRef = inject(DestroyRef);
 
   displayedBookingColumns = ["renter", "dates", "amount", "status", "actions"];
 
@@ -183,9 +184,11 @@ export class StationDetailComponent {
       }
     });
 
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((confirmed) => {
       if (confirmed) {
-        this.bookingsService.updateStatus(booking.id, "accepted").subscribe({
+        this.bookingsService.updateStatus(booking.id, "accepted").pipe(
+          takeUntilDestroyed(this.destroyRef)
+        ).subscribe({
           next: () => this.refreshTrigger.update(n => n + 1),
           error: (err) => this.toastService.error(err.error?.message || "Erreur lors de l'acceptation"),
         });
@@ -208,10 +211,11 @@ export class StationDetailComponent {
       },
     });
 
-    dialogRef.afterClosed().subscribe((reason) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((reason) => {
       if (reason) {
         this.bookingsService
           .updateStatus(booking.id, "refused", reason)
+          .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: () => this.refreshTrigger.update(n => n + 1),
             error: (err) => this.toastService.error(err.error?.message || "Erreur lors du refus"),
@@ -232,7 +236,7 @@ export class StationDetailComponent {
       data: { stationId: s.id },
     });
 
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
       if (result) {
         this.refreshTrigger.update(n => n + 1);
       }
@@ -255,7 +259,7 @@ export class StationDetailComponent {
       },
     });
 
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
       if (result) {
         this.reportsService
           .createReport({
@@ -263,6 +267,7 @@ export class StationDetailComponent {
             reason: result.reason,
             description: result.description,
           })
+          .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: () => this.toastService.success("Signalement envoyé avec succès"),
             error: (err) => this.toastService.error(err.error?.message || "Erreur lors du signalement"),
@@ -330,9 +335,11 @@ export class StationDetailComponent {
       },
     });
 
-    dialogRef.afterClosed().subscribe((reason) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((reason) => {
       if (reason) {
-        this.stationsService.deactivate(s.id, reason).subscribe({
+        this.stationsService.deactivate(s.id, reason).pipe(
+          takeUntilDestroyed(this.destroyRef)
+        ).subscribe({
           next: () => {
             this.refreshTrigger.update(n => n + 1);
             this.toastService.success("Borne désactivée");
@@ -370,11 +377,13 @@ export class StationDetailComponent {
         updates = { isAvailable: false, isActive: true };
         break;
       case 'OFFLINE':
-        updates = { isActive: false }; // Keep isAvailable as is or set to false? Typically offline implies unavail.
+        updates = { isActive: false };
         break;
     }
 
-    this.stationsService.update(s.id, updates).subscribe({
+    this.stationsService.update(s.id, updates).pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
       next: () => {
         this.toastService.success("Statut mis à jour");
         this.stationResource.reload();
@@ -383,7 +392,6 @@ export class StationDetailComponent {
         this.toastService.error(err.error?.message || "Erreur lors de la mise à jour");
       }
     });
-
   }
 
   // Duplicates removed

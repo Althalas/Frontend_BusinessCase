@@ -22,12 +22,12 @@ describe("Système d'Avis", () => {
         cy.clearCookies();
     });
 
-    // Helper to find the seeded station
+    // Helper to find the seeded station (Clermont-Ferrand seed data)
     const getSeededStation = () => {
         return cy.request(`${apiUrl}/stations?limit=100`).then((resp) => {
-            const station = resp.body.data.find((s: any) => s.name === "Borne Élysée Fast");
+            const station = resp.body.data.find((s: any) => s.name === "Borne Chamalieres Express");
             if (!station) {
-                throw new Error("Seeded station 'Borne Élysée Fast' not found. Is the DB seeded?");
+                throw new Error("Seeded station 'Borne Chamalieres Express' not found. Is the DB seeded?");
             }
             return station.id;
         });

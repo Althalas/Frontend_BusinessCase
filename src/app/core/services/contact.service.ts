@@ -25,7 +25,7 @@ export class ContactService {
      * Envoie un message de contact.
      * @param dto Contenu du message.
      */
-    sendMessage(dto: ContactMessage): Observable<any> {
-        return this.http.post(this.apiUrl, dto);
+    sendMessage(dto: ContactMessage): Observable<{ message: string }> {
+        return this.http.post<{ message: string }>(this.apiUrl, dto);
     }
 }

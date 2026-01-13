@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from "@angular/core";
 import { toObservable } from "@angular/core/rxjs-interop";
 import { HttpClient } from "@angular/common/http";
-import { Observable, tap } from "rxjs";
+import { Observable, tap, catchError, of, BehaviorSubject } from "rxjs";
 import { environment } from "@env/environment";
 import { User } from "@core/models/user.model";
 
@@ -71,13 +71,92 @@ export class AuthService {
 
   /**
    * Déconnecte l'utilisateur.
-   * Supprime les tokens du LocalStorage et réinitialise l'état.
+   * Appelle l'API pour invalider le refresh token, puis nettoie le localStorage.
    */
   logout(): void {
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    // Appeler l'API logout pour invalider le token côté serveur
+    if (refreshToken) {
+      this.http.post(`${this.apiUrl}/logout`, { refreshToken }).pipe(
+        catchError(() => of(null)) // Ignorer les erreurs, on déconnecte quand même
+      ).subscribe();
+    }
+
+    // Nettoyer le localStorage
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
     this._currentUser.set(null);
+  }
+
+  /**
+   * Récupère le refresh token stocké.
+   */
+  getRefreshToken(): string | null {
+    return localStorage.getItem("refreshToken");
+  }
+
+  /**
+   * Rafraîchit les tokens d'accès en utilisant le refresh token.
+   * @returns Observable avec les nouveaux tokens ou null si échec.
+   */
+  refreshTokens(): Observable<AuthResponse | null> {
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) {
+      return of(null);
+    }
+
+    return this.http.post<AuthResponse>(`${this.apiUrl}/refresh`, { refreshToken }).pipe(
+      tap((res) => this.handleAuth(res)),
+      catchError(() => {
+        this.clearTokens();
+        return of(null);
+      })
+    );
+  }
+
+  /**
+   * Nettoie les tokens sans appeler l'API (utilisé après échec de refresh).
+   */
+  private clearTokens(): void {
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+    this._currentUser.set(null);
+  }
+
+  /** Flag pour éviter les refresh multiples simultanés. */
+  private isRefreshing = false;
+  private refreshTokenSubject = new BehaviorSubject<string | null>(null);
+
+  /**
+   * Retourne un observable qui émet le nouveau token après refresh.
+   * Gère les appels simultanés.
+   */
+  getRefreshTokenObservable(): BehaviorSubject<string | null> {
+    return this.refreshTokenSubject;
+  }
+
+  /**
+   * Indique si un refresh est en cours.
+   */
+  isTokenRefreshing(): boolean {
+    return this.isRefreshing;
+  }
+
+  /**
+   * Définit l'état de refresh.
+   */
+  setRefreshing(value: boolean): void {
+    this.isRefreshing = value;
+  }
+
+  /**
+   * Émet le nouveau token après un refresh réussi.
+   */
+  emitNewToken(token: string | null): void {
+    this.refreshTokenSubject.next(token);
   }
 
   /**
@@ -106,11 +185,11 @@ export class AuthService {
 
   /**
    * Vérifie si l'utilisateur a le rôle Admin.
+   * Les rôles du backend sont en minuscules (enum Prisma).
    */
   isAdmin(): boolean {
     const user = this.currentUser();
-    if (!user || !user.roles) return false;
-    return user.roles.some(r => r.toLowerCase() === 'admin');
+    return user?.roles?.includes("admin") || false;
   }
 
   /**
@@ -123,14 +202,11 @@ export class AuthService {
 
   /**
    * Vérifie si l'utilisateur a le rôle Client.
+   * Note: Les owners sont aussi clients (peuvent réserver).
    */
   isClient(): boolean {
     const user = this.currentUser();
-    // Default to true if logged in? Or check specific role?
-    // Based on logic, client is default.
-    return (
-      user?.roles?.includes("client") || user?.roles?.includes("owner") || false
-    );
+    return user?.roles?.includes("client") || user?.roles?.includes("owner") || false;
   }
 
   private handleAuth(res: AuthResponse): void {

@@ -1,5 +1,5 @@
-import { Component, inject, signal, ChangeDetectionStrategy, computed, effect } from "@angular/core";
-import { rxResource } from "@angular/core/rxjs-interop";
+import { Component, inject, signal, ChangeDetectionStrategy, computed, effect, DestroyRef } from "@angular/core";
+import { rxResource, takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
 import { RouterLink } from "@angular/router";
 import { MatCardModule } from "@angular/material/card";
@@ -15,11 +15,12 @@ import {
   getStationPower,
   getStationPrice,
 } from "@core/services/stations.service";
+import { BookingsService, Booking } from "@core/services/bookings.service";
 import { AuthService } from "@core/services/auth.service";
 import { ToastService } from "@core/services/toast.service";
 import { createMutationResource } from "@shared/utils/mutation.util";
-import { of } from "rxjs";
-import { catchError } from "rxjs/operators";
+import { of, forkJoin } from "rxjs";
+import { catchError, map, switchMap } from "rxjs/operators";
 import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { ConfirmDialogComponent } from "@shared/components/confirm-dialog/confirm-dialog.component";
 
@@ -49,9 +50,11 @@ import { ConfirmDialogComponent } from "@shared/components/confirm-dialog/confir
 })
 export class MyStationsComponent {
   private stationsService = inject(StationsService);
+  private bookingsService = inject(BookingsService);
   private toastService = inject(ToastService);
   private authService = inject(AuthService);
   private dialog = inject(MatDialog);
+  private destroyRef = inject(DestroyRef);
 
   // --- DÉCLENCHEURS ---
   /** Signal pour rafraîchir la liste après une action. */
@@ -85,33 +88,56 @@ export class MyStationsComponent {
 
   // --- RESSOURCES ---
 
-  /** Ressource des stations de l'utilisateur. */
-  readonly stationsResource = rxResource<Station[], unknown>({
+  /** Interface pour les données combinées stations + stats */
+  private stationsWithStats = signal<{
+    stations: Station[];
+    stats: Map<number, { bookings: number; revenue: number }>;
+  }>({ stations: [], stats: new Map() });
+
+  /** Ressource des stations de l'utilisateur avec leurs stats. */
+  readonly stationsResource = rxResource<{ stations: Station[]; stats: Map<number, { bookings: number; revenue: number }> }, unknown>({
     stream: () => {
       this.refreshTrigger(); // Dependency
       return this.stationsService.getMyStations().pipe(
-        catchError(() => of([]))
+        switchMap(stations => {
+          if (stations.length === 0) {
+            return of({ stations: [], stats: new Map() });
+          }
+          // Charger les bookings pour chaque station en parallèle
+          const bookingRequests = stations.map(s =>
+            this.bookingsService.getStationBookings(s.id).pipe(
+              catchError(() => of([] as Booking[]))
+            )
+          );
+          return forkJoin(bookingRequests).pipe(
+            map(allBookings => {
+              const stats = new Map<number, { bookings: number; revenue: number }>();
+              stations.forEach((station, index) => {
+                const stationBookings = allBookings[index];
+                const completedBookings = stationBookings.filter(b => b.status === 'completed');
+                const revenue = completedBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+                stats.set(station.id, {
+                  bookings: stationBookings.length,
+                  revenue: revenue
+                });
+              });
+              return { stations, stats };
+            })
+          );
+        }),
+        catchError(() => of({ stations: [], stats: new Map() }))
       );
     }
   });
 
   /** Liste des stations. */
-  readonly stations = computed(() => this.stationsResource.value() ?? []);
+  readonly stations = computed(() => this.stationsResource.value()?.stations ?? []);
 
   /** État de chargement. */
   readonly isLoading = computed(() => this.stationsResource.isLoading());
 
-  /** 
-   * Stats Mockées (View Only).
-   * Note: Dans une vraie app, cela viendrait du backend avec la station.
-   */
-  readonly stationStats = computed(() => {
-    const stats = new Map<number, { bookings: number; revenue: number }>();
-    this.stations().forEach(s => {
-      stats.set(s.id, { bookings: 0, revenue: 0 });
-    });
-    return stats;
-  });
+  /** Stats des stations (bookings count et revenue). */
+  readonly stationStats = computed(() => this.stationsResource.value()?.stats ?? new Map());
 
   // --- UTILITAIRES ---
 
@@ -147,7 +173,7 @@ export class MyStationsComponent {
         icon: 'delete'
       }
     });
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((confirmed) => {
       if (confirmed) this.deleteStationMutation.mutate(station.id);
     });
   }

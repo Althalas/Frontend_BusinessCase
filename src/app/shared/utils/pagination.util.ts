@@ -2,27 +2,13 @@ import { Signal, computed } from "@angular/core";
 import { toObservable, toSignal } from "@angular/core/rxjs-interop";
 import { Observable, of } from "rxjs";
 import { catchError, switchMap } from "rxjs/operators";
+import { PaginationMeta, PaginatedResponse } from "@core/models/common.models";
 
-// ... imports kept same ...
+// Ré-exporter pour compatibilité avec les imports existants
+export { PaginationMeta, PaginatedResponse } from "@core/models/common.models";
 
-/**
- * Définition de l'interface pour les métadonnées attendues dans une réponse paginée.
- * Ajustez ceci pour correspondre à la structure Meta exacte de votre backend.
- */
-export interface PageMeta {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-}
-
-/**
- * Forme générique d'une réponse API paginée.
- */
-export interface PaginatedResponse<T> {
-    data: T[];
-    meta: PageMeta;
-}
+/** @deprecated Utilisez PaginationMeta à la place */
+export type PageMeta = PaginationMeta;
 
 /**
  * Signaux de configuration requis pour la pagination.
@@ -90,8 +76,7 @@ export function createPaginatedResource<TData, TFilters = unknown>(
 
 
                 return serviceCallFn(queryParams as Parameters<typeof serviceCallFn>[0]).pipe(
-                    catchError((err) => {
-                        console.error('Erreur Ressource Pagination - Détail :', err);
+                    catchError(() => {
                         // Retourner une structure vide en cas d'erreur
                         return of({
                             data: [] as TData[],

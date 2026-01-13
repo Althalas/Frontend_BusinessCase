@@ -64,8 +64,7 @@ export class PaymentDialogComponent implements OnInit {
       next: (res) => {
         this.initializeElements(res.clientSecret);
       },
-      error: (err) => {
-        console.error(err);
+      error: () => {
         this.errorMessage.set("Impossible d'initialiser le paiement. Réessayez.");
         this.isLoading.set(false);
       }

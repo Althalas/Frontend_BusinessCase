@@ -1,5 +1,5 @@
-import { Component, inject, signal, ChangeDetectionStrategy, computed, effect } from "@angular/core";
-import { toSignal, rxResource } from "@angular/core/rxjs-interop";
+import { Component, inject, signal, ChangeDetectionStrategy, computed, effect, DestroyRef } from "@angular/core";
+import { toSignal, toObservable, takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { createPaginatedResource, PageMeta } from "@shared/utils/pagination.util";
 import { createMutationResource } from "@shared/utils/mutation.util";
 import { CommonModule } from "@angular/common";
@@ -23,7 +23,7 @@ import { ReservationDetailsDialogComponent } from "@shared/components/reservatio
 import { ConfirmDialogComponent } from "@shared/components/confirm-dialog/confirm-dialog.component";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { of } from "rxjs";
-import { debounceTime, distinctUntilChanged, startWith, catchError } from "rxjs/operators";
+import { debounceTime, distinctUntilChanged, startWith, catchError, switchMap } from "rxjs/operators";
 
 // --- INTERFACES ---
 interface User {
@@ -34,6 +34,7 @@ interface User {
   roles: string[];
   isValidated: boolean;
   isActive: boolean;
+  deletedAt: string | null;
 }
 
 interface Station {
@@ -132,6 +133,7 @@ export class AdminDashboardComponent {
   private reportsService = inject(ReportsService);
   private stationsService = inject(StationsService);
   private dialog = inject(MatDialog);
+  private destroyRef = inject(DestroyRef);
   private apiUrl = environment.apiUrl;
 
   // --- COLUMNS ---
@@ -206,6 +208,16 @@ export class AdminDashboardComponent {
   /** Mutation : Rejeter la réservation. */
   readonly rejectReservationMutation = createMutationResource<any, { id: number; reason: string }>(
     (args) => this.http.patch(`${this.apiUrl}/admin/reservations/${args.id}/reject`, { reason: args.reason })
+  );
+
+  /** Mutation : Supprimer un utilisateur (soft-delete). */
+  readonly deleteUserMutation = createMutationResource<any, { id: number; reason: string }>(
+    (args) => this.http.delete(`${this.apiUrl}/admin/users/${args.id}`, { body: { reason: args.reason } })
+  );
+
+  /** Mutation : Restaurer un utilisateur supprimé. */
+  readonly restoreUserMutation = createMutationResource<any, number>(
+    (id) => this.http.patch(`${this.apiUrl}/admin/users/${id}/restore`, {})
   );
 
   /** Signals de recherche avec Debounce (indépendants). */
@@ -310,6 +322,23 @@ export class AdminDashboardComponent {
         this.refreshReservations.update(n => n + 1);
       }
     });
+
+    // User delete
+    effect(() => {
+      if (this.deleteUserMutation.isSuccess()) {
+        this.refreshUsers.update(n => n + 1);
+        this.refreshStats.update(n => n + 1);
+      }
+    });
+
+    // User restore
+    effect(() => {
+      if (this.restoreUserMutation.isSuccess()) {
+        this.refreshUsers.update(n => n + 1);
+        this.refreshStats.update(n => n + 1);
+      }
+    });
+
   }
 
   // --- RESOURCES ---
@@ -317,9 +346,11 @@ export class AdminDashboardComponent {
   // 1. Users Resource
   // --- RESOURCES using Generic Utility ---
 
-  // 1. Users
+  // 1. Users (via /admin/users avec includeDeleted pour voir les utilisateurs supprimés)
   readonly usersState = createPaginatedResource<User>(
-    (params) => this.http.get<UserResponse>(`${this.apiUrl}/users`, { params }),
+    (params) => this.http.get<UserResponse>(`${this.apiUrl}/admin/users`, {
+      params: { ...params, includeDeleted: 'true' }
+    }),
     {
       page: this.usersPageIndex,
       limit: this.usersPageSize,
@@ -357,20 +388,21 @@ export class AdminDashboardComponent {
   readonly totalReservations = this.reservationsState.total;
 
 
-  // 4. Reports Resource
-  readonly reportsResource = rxResource<Report[], unknown>({
-    stream: () => {
-      this.refreshReports();
-      return this.reportsService.getAllReports().pipe(catchError(() => of([])));
-    }
-  });
-  readonly reports = computed(() => this.reportsResource.value() ?? []);
+  // 4. Reports Resource (toObservable pattern for reactive refresh)
+  private readonly reportsSource = computed(() => this.refreshReports());
+  private readonly reportsSignal = toSignal(
+    toObservable(this.reportsSource).pipe(
+      switchMap(() => this.reportsService.getAllReports().pipe(catchError(() => of([]))))
+    ),
+    { initialValue: [] as Report[] }
+  );
+  readonly reports = computed(() => this.reportsSignal() ?? []);
 
-  // 5. Stats Resource
-  readonly statsResource = rxResource<Stats, unknown>({
-    stream: () => {
-      this.refreshStats();
-      return this.http.get<Stats>(`${this.apiUrl}/admin/stats`).pipe(
+  // 5. Stats Resource (toObservable pattern for reactive refresh)
+  private readonly statsSource = computed(() => this.refreshStats());
+  private readonly statsSignal = toSignal(
+    toObservable(this.statsSource).pipe(
+      switchMap(() => this.http.get<Stats>(`${this.apiUrl}/admin/stats`).pipe(
         catchError(() => of({
           totalUsers: 0,
           totalStations: 0,
@@ -378,10 +410,11 @@ export class AdminDashboardComponent {
           pendingReservations: 0,
           pendingValidations: 0,
         }))
-      );
-    }
-  });
-  readonly stats = computed(() => this.statsResource.value() ?? {
+      ))
+    ),
+    { initialValue: { totalUsers: 0, totalStations: 0, totalReservations: 0, pendingReservations: 0, pendingValidations: 0 } }
+  );
+  readonly stats = computed(() => this.statsSignal() ?? {
     totalUsers: 0,
     totalStations: 0,
     totalReservations: 0,
@@ -423,6 +456,36 @@ export class AdminDashboardComponent {
 
   toggleStatus(user: User) {
     this.toggleUserStatusMutation.mutate(user.id);
+  }
+
+  async deleteUser(user: User) {
+    const reason = await this.promptForReason(
+      "Supprimer l'utilisateur",
+      `Pourquoi supprimez-vous "${user.firstName} ${user.lastName}" ?`
+    );
+
+    if (!reason) return;
+    this.deleteUserMutation.mutate({ id: user.id, reason });
+  }
+
+  restoreUser(user: User) {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Restaurer l\'utilisateur',
+        message: `Voulez-vous restaurer le compte de ${user.firstName} ${user.lastName} ?`,
+        confirmLabel: 'Restaurer',
+        confirmColor: 'primary',
+        icon: 'restore'
+      }
+    });
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((confirmed) => {
+      if (confirmed) this.restoreUserMutation.mutate(user.id);
+    });
+  }
+
+  isUserDeleted(user: User): boolean {
+    return !!user.deletedAt;
   }
 
   updateReportStatus(report: Report, status: "RESOLVED" | "DISMISSED") {
@@ -475,7 +538,7 @@ export class AdminDashboardComponent {
         icon: 'check_circle'
       }
     });
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((confirmed) => {
       if (confirmed) this.approveReservationMutation.mutate(reservation.id);
     });
   }

@@ -1,5 +1,5 @@
-import { Component, inject, signal, computed, ChangeDetectionStrategy, effect } from "@angular/core";
-import { rxResource } from "@angular/core/rxjs-interop";
+import { Component, inject, signal, computed, ChangeDetectionStrategy, effect, DestroyRef } from "@angular/core";
+import { rxResource, takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
 import { RouterLink } from "@angular/router";
 import {
@@ -89,6 +89,7 @@ export class DashboardHomeComponent {
   private toastService = inject(ToastService);
   private fb = inject(FormBuilder);
   private dialog = inject(MatDialog);
+  private destroyRef = inject(DestroyRef);
 
   /** Utilisateur courant. */
   readonly currentUser = this.authService.currentUser;
@@ -337,7 +338,7 @@ export class DashboardHomeComponent {
         icon: 'delete'
       }
     });
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((confirmed) => {
       if (confirmed) this.deleteVehicleMutation.mutate(id);
     });
   }
@@ -357,7 +358,7 @@ export class DashboardHomeComponent {
         icon: 'delete'
       }
     });
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((confirmed) => {
       if (confirmed) this.deleteStationMutation.mutate(station.id);
     });
   }

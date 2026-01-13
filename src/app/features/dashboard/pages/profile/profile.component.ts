@@ -1,5 +1,7 @@
-import { Component, inject, computed, effect, ChangeDetectionStrategy } from "@angular/core";
+import { Component, inject, computed, effect, ChangeDetectionStrategy, DestroyRef } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
+import { Router } from "@angular/router";
 import {
   FormBuilder,
   FormGroup,
@@ -14,20 +16,15 @@ import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatTabsModule } from "@angular/material/tabs";
+import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { AuthService } from "@core/services/auth.service";
 import { UsersService } from "@core/services/users.service";
 import { ToastService } from "@core/services/toast.service";
 import { createMutationResource } from "@shared/utils/mutation.util";
 import { getAvatarUrl } from "@shared/utils/user.util";
+import { ConfirmDialogComponent } from "@shared/components/confirm-dialog/confirm-dialog.component";
 import { MatChipsModule } from "@angular/material/chips";
-import { MatSelectModule } from "@angular/material/select";
-import { MatDatepickerModule } from "@angular/material/datepicker";
-import { MatNativeDateModule } from "@angular/material/core";
-import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatListModule } from "@angular/material/list";
-import { MatDialogModule } from "@angular/material/dialog";
-import { MatTableModule } from "@angular/material/table";
-import { MatPaginatorModule } from "@angular/material/paginator";
 
 /**
  * Page de profil utilisateur.
@@ -51,7 +48,6 @@ import { MatPaginatorModule } from "@angular/material/paginator";
     MatDividerModule,
     MatTabsModule,
     MatListModule,
-    MatListModule,
     MatDialogModule,
     MatChipsModule,
   ],
@@ -64,6 +60,9 @@ export class ProfileComponent {
   private readonly authService = inject(AuthService);
   private readonly usersService = inject(UsersService);
   private readonly toastService = inject(ToastService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
 
   /** Utilisateur courant (Signal dérivé du service d'auth). */
   readonly currentUser = this.authService.currentUser;
@@ -102,6 +101,11 @@ export class ProfileComponent {
   // Ressource de mutation pour le changement de mot de passe
   readonly changePasswordMutation = createMutationResource((dto: { currentPassword: string; newPassword: string }) =>
     this.usersService.changePassword(dto)
+  );
+
+  // Ressource de mutation pour la suppression de compte (RGPD)
+  readonly deleteAccountMutation = createMutationResource(() =>
+    this.usersService.deleteAccount()
   );
 
   // État de chargement calculé (combinaison de toutes les mises à jour)
@@ -176,6 +180,21 @@ export class ProfileComponent {
         this.toastService.error("Erreur lors de la mise à jour");
       }
     });
+
+    // --- EFFETS : Suppression de compte ---
+    effect(() => {
+      if (this.deleteAccountMutation.isSuccess()) {
+        this.toastService.success("Votre compte a été supprimé avec succès.");
+        this.authService.logout();
+        this.router.navigate(["/"]);
+      }
+    });
+
+    effect(() => {
+      if (this.deleteAccountMutation.error()) {
+        this.toastService.error("Erreur lors de la suppression du compte.");
+      }
+    });
   }
 
   // --- ACTIONS ---
@@ -210,7 +229,9 @@ export class ProfileComponent {
    * Exporte les données personnelles au format JSON.
    */
   downloadData(): void {
-    this.usersService.exportData().subscribe({
+    this.usersService.exportData().pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
       next: (data) => {
         const json = JSON.stringify(data, null, 2);
         const blob = new Blob([json], { type: "application/json" });
@@ -244,5 +265,28 @@ export class ProfileComponent {
         this.changePasswordMutation.mutate({ currentPassword, newPassword });
       }
     }
+  }
+
+  /**
+   * Ouvre une boîte de dialogue de confirmation pour supprimer le compte (RGPD Article 17).
+   */
+  deleteAccount(): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: "450px",
+      data: {
+        title: "Supprimer mon compte",
+        message:
+          "Cette action est irréversible. Toutes vos données personnelles seront anonymisées conformément au RGPD. Voulez-vous vraiment supprimer votre compte ?",
+        confirmLabel: "Supprimer définitivement",
+        confirmColor: "warn",
+        icon: "delete_forever",
+      },
+    });
+
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((confirmed) => {
+      if (confirmed) {
+        this.deleteAccountMutation.mutate(undefined);
+      }
+    });
   }
 }

@@ -84,6 +84,15 @@ export class StationsListComponent {
   });
   readonly userVehicles = computed(() => this.userVehiclesResource.value() ?? []);
 
+  // Types de connecteurs des véhicules de l'utilisateur (filtre les undefined)
+  readonly userVehicleConnectors = computed(() => {
+    const vehicles = this.userVehicles();
+    const connectors = vehicles
+      .map(v => v.connectorType)
+      .filter((c): c is NonNullable<typeof c> => !!c);
+    return [...new Set(connectors)];
+  });
+
   // --- SIGNAL FILTRES ---
   // Transforme les valeurs du formulaire en filtres DTO acceptables
   readonly filters = toSignal(
@@ -113,9 +122,13 @@ export class StationsListComponent {
     { initialValue: {} }
   );
 
-  // --- RESSOURCE PRINCIPALE (Pagination Côté Serveur) ---
-  readonly searchSearchSignal = computed(() => this.filterForm.get('search')?.value);
+  // Signal pour le toggle "Compatible véhicules"
+  readonly onlyMyVehicles = toSignal(
+    this.filterForm.get('onlyMyVehicles')!.valueChanges.pipe(startWith(false)),
+    { initialValue: false }
+  );
 
+  // --- RESSOURCE PRINCIPALE (Pagination Côté Serveur) ---
   readonly stationsState = createPaginatedResource<Station, any>(
     (params) => {
       // Mappage des paramètres génériques vers SearchStationsDto
@@ -126,32 +139,79 @@ export class StationsListComponent {
         maxPrice: params.maxPrice,
         connectorType: params.connectorType,
         search: params.search
-      }).pipe(
-        // ADAPTATEUR : Mappage 'PaginationMeta' Backend vers 'PageMeta' Utilitaire
-        map(res => ({
-          data: res.data,
-          meta: {
-            total: res.meta.total,
-            page: res.meta.currentPage,
-            limit: res.meta.itemsPerPage,
-            totalPages: res.meta.totalPages
-          }
-        }))
-      );
+      });
     },
     {
       page: this.pageIndex,
       limit: this.pageSize,
-      // On ne passe pas le signal 'search' au paramètre de recherche de l'utilitaire
-      // car search() du backend ne supporte pas encore de requête texte générique.
-      // On passe les autres filtres.
       filters: this.filters
     }
   );
 
-  readonly stations = this.stationsState.data;
+  readonly rawStations = this.stationsState.data;
   readonly totalItems = this.stationsState.total;
   readonly isLoading = this.stationsState.loading;
+
+  /**
+   * Stations filtrées par compatibilité véhicule (côté client).
+   * Matrice de compatibilité :
+   * - TYPE2 ↔ TYPE2S (intercompatibles)
+   * - DOMESTIC accepte tout
+   * - CCS uniquement avec CCS
+   * - CHADEMO uniquement avec CHADEMO
+   */
+  readonly stations = computed(() => {
+    const allStations = this.rawStations();
+    const filterByVehicle = this.onlyMyVehicles();
+    const userConnectors = this.userVehicleConnectors();
+
+    if (!filterByVehicle || userConnectors.length === 0) {
+      return allStations;
+    }
+
+    return allStations.filter(station => {
+      const stationConnector = station.connectorType;
+
+      // Si la station n'a pas de type de connecteur défini, on l'inclut par défaut
+      if (!stationConnector) {
+        return true;
+      }
+
+      // DOMESTIC accepte tous les véhicules
+      if (stationConnector === 'DOMESTIC') {
+        return true;
+      }
+
+      // Vérifier la compatibilité avec au moins un véhicule de l'utilisateur
+      // TypeScript a déjà vérifié que stationConnector n'est pas undefined ci-dessus
+      return userConnectors.some(vehicleConnector =>
+        this.isConnectorCompatible(vehicleConnector, stationConnector as string)
+      );
+    });
+  });
+
+  /**
+   * Vérifie la compatibilité entre le connecteur d'un véhicule et celui d'une station.
+   */
+  private isConnectorCompatible(vehicleConnector: string, stationConnector: string): boolean {
+    // Même type = compatible
+    if (vehicleConnector === stationConnector) {
+      return true;
+    }
+
+    // TYPE2 et TYPE2S sont intercompatibles
+    const type2Family = ['TYPE2', 'TYPE2S'];
+    if (type2Family.includes(vehicleConnector) && type2Family.includes(stationConnector)) {
+      return true;
+    }
+
+    // DOMESTIC accepte tout (déjà géré au-dessus, mais par sécurité)
+    if (stationConnector === 'DOMESTIC') {
+      return true;
+    }
+
+    return false;
+  }
 
   // --- MUTATIONS (Signaux Purs) ---
 
@@ -179,7 +239,7 @@ export class StationsListComponent {
     )
   });
 
-  // Signal exposant le Set des IDs favoris (pour réactivité template)
+  
   readonly favoriteIds = computed(() => this.favoritesResource.value() ?? new Set<number>());
 
   onToggleFavorite(stationId: number): void {
@@ -188,10 +248,6 @@ export class StationsListComponent {
 
   resetFilters(): void {
     this.filterForm.reset();
-    this.pageIndex.set(0);
-  }
-
-  applyBackendFilters(): void {
     this.pageIndex.set(0);
   }
 
