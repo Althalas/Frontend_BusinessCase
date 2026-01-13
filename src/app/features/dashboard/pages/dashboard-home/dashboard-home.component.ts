@@ -1,5 +1,5 @@
 import { Component, inject, signal, computed, ChangeDetectionStrategy, effect, DestroyRef } from "@angular/core";
-import { rxResource, takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { rxResource, takeUntilDestroyed, toObservable, toSignal } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
 import { RouterLink } from "@angular/router";
 import {
@@ -43,7 +43,7 @@ import { createMutationResource } from "@shared/utils/mutation.util";
 import { createPaginatedResource } from "@shared/utils/pagination.util";
 import { environment } from "../../../../../environments/environment";
 import { of } from "rxjs";
-import { catchError } from "rxjs/operators";
+import { catchError, switchMap } from "rxjs/operators";
 
 /**
  * Page d'accueil du tableau de bord.
@@ -221,15 +221,16 @@ export class DashboardHomeComponent {
   readonly isLoadingBookings = computed(() => this.isLoadingUpcoming() || this.isLoadingHistory());
 
 
-  // 2. Ressource Véhicules
-  readonly vehiclesResource = rxResource<Vehicle[], unknown>({
-    stream: () => {
-      this.refreshVehicles();
-      return this.vehiclesService.getAll().pipe(catchError(() => of([])));
-    }
-  });
-  readonly myVehicles = computed(() => this.vehiclesResource.value() ?? []);
-  readonly isLoadingVehicles = computed(() => this.vehiclesResource.isLoading());
+  // 2. Ressource Véhicules (pattern réactif avec toObservable)
+  private readonly vehiclesSource = computed(() => this.refreshVehicles());
+  private readonly vehiclesSignal = toSignal(
+    toObservable(this.vehiclesSource).pipe(
+      switchMap(() => this.vehiclesService.getAll().pipe(catchError(() => of([]))))
+    ),
+    { initialValue: [] as Vehicle[] }
+  );
+  readonly myVehicles = computed(() => this.vehiclesSignal() ?? []);
+  readonly isLoadingVehicles = signal(false); // Note: pattern toSignal ne fournit pas d'état de chargement natif
 
   // 3. Ressource Favoris - Angular 21 avec reload()
   readonly favoritesResource = rxResource<Station[], unknown>({
@@ -251,19 +252,22 @@ export class DashboardHomeComponent {
   });
   readonly givenReviews = computed(() => this.givenReviewsResource.value() ?? []);
 
-  // 6. Ressource Stations Propriétaire (Logique conditionnelle dans le flux gérée par le service ou vérification vide)
-  readonly myStationsResource = rxResource<Station[], unknown>({
-    stream: () => {
-      this.refreshStations();
-      // Charger uniquement si propriétaire
-      if (this.currentUser()?.roles?.includes("owner")) {
-        return this.stationsService.getMyStations().pipe(catchError(() => of([])));
-      }
-      return of([]);
-    }
-  });
-  readonly myStations = computed(() => this.myStationsResource.value() ?? []);
-  readonly isLoadingStations = computed(() => this.myStationsResource.isLoading());
+  // 6. Ressource Stations Propriétaire (pattern réactif avec toObservable)
+  private readonly stationsSource = computed(() => this.refreshStations());
+  private readonly stationsSignal = toSignal(
+    toObservable(this.stationsSource).pipe(
+      switchMap(() => {
+        // Charger uniquement si propriétaire
+        if (this.currentUser()?.roles?.includes("owner")) {
+          return this.stationsService.getMyStations().pipe(catchError(() => of([])));
+        }
+        return of([]);
+      })
+    ),
+    { initialValue: [] as Station[] }
+  );
+  readonly myStations = computed(() => this.stationsSignal() ?? []);
+  readonly isLoadingStations = signal(false);
 
 
   // --- COMPUTED STATE ---
