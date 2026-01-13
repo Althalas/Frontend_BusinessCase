@@ -34,9 +34,8 @@ describe('Fonctionnalité Stations', () => {
 
       cy.get('[data-cy="stations-connector-select"]').click({ force: true });
       cy.get('mat-option').contains('Type 2').click({ force: true });
-      // Button text is "Appliquer Filtres Serveur" in the actual UI
-      cy.get('[data-cy="stations-filter-btn"]').click({ force: true });
 
+      // Les filtres sont réactifs - pas de bouton submit, l'API est appelée automatiquement après debounce
       // Wait for the API response (event-driven, not hardcoded)
       cy.wait('@filterStations', { timeout: 10000 });
     });

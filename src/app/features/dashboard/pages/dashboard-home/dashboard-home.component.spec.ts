@@ -180,8 +180,10 @@ describe("DashboardHomeComponent", () => {
     expect(component.getBookingStatusColor("pending")).toBe("");
   });
 
-  it("doit avoir les ressources favoris et stations", () => {
+  it("doit avoir les signaux favoris et stations", () => {
+    // Les ressources sont maintenant exposées via des computed signals
     expect(component.favoritesResource).toBeDefined();
-    expect(component.myStationsResource).toBeDefined();
+    expect(typeof component.myFavorites).toBe("function");
+    expect(typeof component.myStations).toBe("function");
   });
 });

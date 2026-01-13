@@ -100,6 +100,12 @@
                   <mat-icon>calendar_today</mat-icon>
                   Réserver cette borne
                 </button>
+                } @else if (!station.isActive || !station.isAvailable) {
+                <button mat-raised-button disabled class="full-width"
+                  matTooltip="Cette borne n'est pas disponible actuellement">
+                  <mat-icon>block</mat-icon>
+                  Borne indisponible
+                </button>
                 } @else {
                 <button mat-raised-button color="primary" class="full-width"
                   [routerLink]="['/bookings/new', station.id]" data-cy="station-reserve-btn">
