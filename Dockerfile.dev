@@ -14,7 +14,9 @@ COPY . .
 EXPOSE 4200
 
 # Démarrage en mode Watch avec Polling (pour Windows/Docker) et Host 0.0.0.0
-# --configuration docker : Utilise l'environnement Docker (apiUrl: http://backend:3000/api)
+# --configuration docker : Utilise environment.docker.ts (apiUrl: http://localhost:3000/api)
+#    Note: Angular s'exécute dans le navigateur, pas dans le container, donc on utilise localhost
+#    car le port 3000 du backend est mappé sur l'hôte via docker-compose
 # --poll 2000 : Vérifie les changements de fichiers toutes les 2s (fixe les problèmes de volumes Docker Windows)
 # --host 0.0.0.0 : Rend le serveur accessible depuis l'extérieur du conteneur
 # --disable-host-check : Évite les erreurs de sécurité liées au nom d'hôte Docker

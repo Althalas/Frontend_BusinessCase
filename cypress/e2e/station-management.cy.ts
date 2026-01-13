@@ -14,7 +14,7 @@ describe("Gestion des Stations (Propriétaire)", () => {
     let testStationId: number;
     let ownerToken: string;
 
-    const ownerEmail = "marie.owner@test.com";
+    const ownerEmail = "pierre.volcan@test.com";
     const ownerPassword = "TestPassword123!";
 
     beforeEach(() => {
@@ -66,7 +66,7 @@ describe("Gestion des Stations (Propriétaire)", () => {
             // Wait for loading to complete
             cy.get("mat-spinner").should("not.exist");
 
-            // Since we are using an existing owner (Marie) who HAS stations in seed data:
+            // Since we are using an existing owner (Pierre) who HAS stations in seed data:
             // We expect to see stations, NOT the empty state.
             cy.get(".station-card").should("have.length.greaterThan", 0);
             cy.contains("Aucune borne enregistrée").should("not.exist");
